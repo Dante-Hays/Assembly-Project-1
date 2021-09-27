@@ -8,43 +8,91 @@
 ; Purpose:
 ;********************************************************************
 
+;********************************************************************
+; Names:   Charles Kinser
+;          ADD YOUR NAME
+;          ADD YOUR NAME
+;          ADD YOUR NAME
+; Lab:     Project
+; Date:    9/26/2021
+; Purpose:
+;********************************************************************
+
+;*****************************
+;VARIABLES
+;*****************************
+
 skip:    BR main
 
-inVec:   .BLOCK  128         ;array of characters from input, global array #2d64a
-vecI:    .WORD   0           ;current index of inVec array #2d
-inVecL:  .WORD   0           ;length of inVec, global variable #2d
+inVec:   .BLOCK  128         ;array of characters and values from input, global array #2c64a
+                             ;the input is convereted into an array to allow access multiple times 
+vecI:    .WORD   0           ;store current index of inVec array when register is in use #2d
+inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
-num1:    .BLOCK  2           ;variable for multidigit intake #2d
-num2:    .BLOCK  2           ;variable for multidigit intake #2d
-value:   .WORD   1           ;temporary storage for integer intake #2d
+num1:    .BLOCK  2           ;variable for multidigit intake #2d 
+num2:    .BLOCK  2           ;variable for multidigit intake #2d 
+value:   .WORD   0           ;temporary storage for integer intake #2d
+
+;*****************************
+;INPUT TO ARRAY
+;*****************************
 
 main:    LDBA charIn,d       ;prep for first run by populating num2
-         SUBA 30,i           ;convert to deci
-         STBA num2,d
-loop:    LDBA num2,d         ;shift input chars
-         STBA num1,d
+         SUBA 0x30,i         ;convert to deci
+         STWA num2,d
+loop:    LDWA num2,d         ;shift input chars
+         STWA num1,d
          LDBA charIn,d
-         SUBA 30,i           ;convert to deci
-         STBA num2,d
+         SUBA 0x30,i         ;convert to deci
+         STWA num2,d
          
-         LDBA num1,d         ;if num1 is not deci, store as char, else add to value
-         CPBA 9,i            ;check for int by checking for range 0
+         LDWA num1,d         ;if num1 is not deci, store as char, else add to value
+         CPWA 9,i            ;check for int by checking for range 0
          BRGT notDec
-         CPBA 0,i
+         CPWA 0,i
          BRLT notDec
          ADDA value,d
          STWA value,d
+
          
-         LDBA num2,d         ;if num2 is not deci, leave, else multiply value by 10
-         CPBA 9,i
+         LDWA num2,d         ;if num2 is not deci, handle the char, else multiply value by 10
+         CPWA 9,i
          BRGT decDone
-         CPBA 0,i
+         CPWA 0,i
          BRLT decDone
          LDWA value,d
-         ;TODO multiply by 10
+         ;TODO multiply value by 10
          STWA value,d
          BR loop
 
+notDec:  ADDA 0x30,i         ;convert back to ascii char
+         LDWX vecI,d         ;load inVec index
+         STWA inVec,x        ;store in array
+         LDWA vecI,d         ;increment index & length
+         ADDA 1,i
+         STWA vecI,d
+         STWA inVecL,d 
+         LDWA 0,i            ;reset value 
+         STWA value,d  
+         BR loop           
+             
+decDone: LDWA value,d
+         LDWX vecI,d         ;load inVec index
+         STWA inVec,x        ;store in array
+         LDWA vecI,d         ;increment index & length
+         ADDA 1,i
+         STWA vecI,d
+         ADDA 1,i
+         STWA inVecL,d
+         LDWA 0,i            ;reset value
+         STWA value,d
+         LDWA num2,d         ;check if input is finished, if so, move to postFix  
+         CPWA '\n',d
+         BREQ postFix
+         BR loop           
+
+postFix:  .end ;TODO
+                  
 retVal:  .EQUATE 12          ;returned value #2d
 mult1:   .EQUATE 10          ;formal parameter #2d
 mult2:   .EQUATE 8           ;formal parameter #2d
@@ -260,9 +308,5 @@ endForS: LDBA    '\n',i      ;printf("\n")
          LDBA    '\n',i
          STBA    charOut,d
          RET  
-
-notDec:  ADDA 30,i           ;convert back to ascii char
-         
-decDone: .end
          
          
