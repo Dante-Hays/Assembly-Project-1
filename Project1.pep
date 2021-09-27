@@ -42,6 +42,7 @@ main:    LDBA charIn,d       ;prep for first run by populating num2
          STWA num2,d
 loop:    LDWA num2,d         ;shift input chars
          STWA num1,d
+         LDWA 0x0000,i       ;clear accumulator
          LDBA charIn,d
          SUBA 0x30,i         ;convert to deci
          STWA num2,d
@@ -66,11 +67,14 @@ loop:    LDWA num2,d         ;shift input chars
          BR loop
 
 notDec:  ADDA 0x30,i         ;convert back to ascii char
+         CPWA 0x000A,i       ;check if input is finished, if so, move to postFix
+         BREQ postFix 
          LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
-         ADDA 1,i
+         ADDA 2,i
          STWA vecI,d
+         ASLA
          STWA inVecL,d 
          LDWA 0,i            ;reset value 
          STWA value,d  
@@ -80,15 +84,12 @@ decDone: LDWA value,d
          LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
-         ADDA 1,i
+         ADDA 2,i
          STWA vecI,d
-         ADDA 1,i
+         ASLA
          STWA inVecL,d
          LDWA 0,i            ;reset value
-         STWA value,d
-         LDWA num2,d         ;check if input is finished, if so, move to postFix  
-         CPWA '\n',d
-         BREQ postFix
+         STWA value,d 
          BR loop           
 
 postFix:  .end ;TODO
