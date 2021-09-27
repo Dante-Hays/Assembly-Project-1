@@ -8,16 +8,6 @@
 ; Purpose:
 ;********************************************************************
 
-;********************************************************************
-; Names:   Charles Kinser
-;          ADD YOUR NAME
-;          ADD YOUR NAME
-;          ADD YOUR NAME
-; Lab:     Project
-; Date:    9/26/2021
-; Purpose:
-;********************************************************************
-
 ;*****************************
 ;VARIABLES
 ;*****************************
@@ -29,8 +19,8 @@ inVec:   .BLOCK  128         ;array of characters and values from input, global 
 vecI:    .WORD   0           ;store current index of inVec array when register is in use #2d
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
-num1:    .BLOCK  2           ;variable for multidigit intake #2d 
-num2:    .BLOCK  2           ;variable for multidigit intake #2d 
+num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d 
+num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d 
 value:   .WORD   0           ;temporary storage for integer intake #2d
 
 ;*****************************
@@ -40,7 +30,7 @@ value:   .WORD   0           ;temporary storage for integer intake #2d
 main:    LDBA charIn,d       ;prep for first run by populating num2
          SUBA 0x30,i         ;convert to deci
          STWA num2,d
-loop:    LDWA num2,d         ;shift input chars
+loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- charIn
          STWA num1,d
          LDWA 0x0000,i       ;clear accumulator
          LDBA charIn,d
@@ -74,7 +64,7 @@ notDec:  ADDA 0x30,i         ;convert back to ascii char
          LDWA vecI,d         ;increment index & length
          ADDA 2,i
          STWA vecI,d
-         ASLA
+         ASRA
          STWA inVecL,d 
          LDWA 0,i            ;reset value 
          STWA value,d  
@@ -86,7 +76,7 @@ decDone: LDWA value,d
          LDWA vecI,d         ;increment index & length
          ADDA 2,i
          STWA vecI,d
-         ASLA
+         ASRA
          STWA inVecL,d
          LDWA 0,i            ;reset value
          STWA value,d 
