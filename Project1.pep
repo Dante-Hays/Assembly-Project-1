@@ -52,8 +52,15 @@ loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- charIn
          CPWA 0,i
          BRLT decDone
          LDWA value,d
-         ;TODO multiply value by 10
+         LDWA 10,i       ;move value
+         STWA -4,s         
+         LDWA value,d
+         STWA -6,s
+         SUBSP 6,i         ;push #retVal #mult1 #mult2 
+         CALL  multiply    
+         LDWA 4,s
          STWA value,d
+         ADDSP 6,i         ;pop #mult2 #mult1 #retVal 
          BR loop
 
 notDec:  ADDA 0x30,i         ;convert back to ascii char
@@ -82,7 +89,7 @@ decDone: LDWA value,d
          STWA value,d 
          BR loop           
 
-postFix:  .end ;TODO
+postFix:  BR end ;TODO
                   
 retVal:  .EQUATE 12          ;returned value #2d
 mult1:   .EQUATE 10          ;formal parameter #2d
@@ -300,4 +307,5 @@ endForS: LDBA    '\n',i      ;printf("\n")
          STBA    charOut,d
          RET  
          
+end:     .END
          
