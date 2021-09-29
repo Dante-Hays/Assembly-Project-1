@@ -107,6 +107,7 @@ m2Sign:  .EQUATE 4           ;local variable; sign of the 2nd multiple #1d
 k:       .EQUATE 2           ;local variable #2d
                              ;keeps track of how many times to loop and add mult1 by mult2 times
 result:  .EQUATE 0           ;local variable; calculated result #2d
+                             ;many changes made to this variable in function; end result placed into retVal
 ;Multiply function takes two number (word) parameters, multiplies them,
 ;  and returns the result in retVal.
 ;This function works by adding mult1 to itself mult2 times.
@@ -122,15 +123,15 @@ multiply:SUBSP   6,i         ;push #m1Sign #m2Sign #k #result
 ;from this point on, do absolute value operations on mult1 and mult2
 ;and store their original signs in the m1Sign and m2Sign bytes
 ;so we can restore the sign later on
-         LDWA    mult1,s     ;TODO comments
+chckM2:  LDWA    mult1,s     ;TODO comments
          CPWA    0,i         ;
-         BRGT    multp1      ;
+         BRGT    chckM2      ;
 abs1:    NOTA                ;
          ADDA    1,i         ;
          STWA    mult1,s     ;
          LDBA    1,i         ;
          STBA    m1Sign,s    ;
-multp1:  LDWA    mult2,s     ;
+chckM2:  LDWA    mult2,s     ;
          CPWA    0,i         ;
          BRGT    forM        ;
 abs2:    NOTA                ;
@@ -150,6 +151,8 @@ forM:    LDWA    k,s         ;load k for comparison if not loaded already, to se
          ADDA    1,i         ;add one to it so we can see when we reach mult2 and stop adding
          STWA    k,s         ;store it to k
          BR      forM        ;do the loop again!
+;The end function which prints the equation
+;  and returns the result
 endForM: LDBA    '\n',i      ;print out newline
          STBA    charOut,d   ;print out newline
          LDBA    m1Sign,s    ;TODO comments
@@ -210,27 +213,28 @@ divide:  SUBSP   6,i         ;push #div1Sign #div2Sign #dk #dresult
 ;from this point on, do absolute value operations on div1 and div2
 ;and store their original signs in the div1Sign and div2Sign bytes
 ;so we can restore the sign later on
-         LDWA    div1,s      ;TODO comments
+chckD1:  LDWA    div1,s      ;TODO comments
          CPWA    0,i         ;
-         BRGT    divp1       ;
+         BRGT    chckD2      ;
 absD1:   NOTA                ;
          ADDA    1,i         ;
          STWA    div1,s      ;
          LDBA    1,i         ;
          STBA    div1Sign,s  ;
-divp1:   LDWA    div2,s      ;
+chckD2:  LDWA    div2,s      ;
          CPWA    0,i         ;
          BREQ    divZero     ;
-         BRGT    divp2       ;
+         BRGT    forD        ;
 absD2:   NOTA                ;
          ADDA    1,i         ;
          STWA    div2,s      ;
          LDBA    1,i         ;
          STBA    div2Sign,s  ;
-divp2:   LDWA    0,i         ;
-         STWA    dk,s        ;
-         LDWA    dk,s        ;
-forD:    CPWA    div1,s      ;
+;loop section
+;adds div2 to itself until it is greater than div1
+;The amount of times div2 was added to itself is the result.
+forD:    LDWA    dk,s        ;TODO comments
+         CPWA    div1,s      ;
          BRGE    checkRmd    ;
          LDWA    dk,s        ;
          ADDA    div2,s      ;
@@ -240,7 +244,9 @@ forD:    CPWA    div1,s      ;
          STWA    dresult,s   ;
          LDWA    dk,s        ;
          BR      forD        ;
-checkRmd:LDWA    dk,s        ;
+;After finding the result, this function 
+;  checks what the remainder/modulo value is
+checkRmd:LDWA    dk,s        ;TODO comments
          CPWA    div1,s      ;
          BREQ    endForD     ;
          LDWA    dresult,s   ;
@@ -253,9 +259,13 @@ checkRmd:LDWA    dk,s        ;
          SUBA    dk,s        ;
          STWA    remaind,s   ;
          BR      endForD     ;
-divZero: LDWA    -1,i        ;
+;If dividing by zero, this function is called
+;  and sets the result to -1
+divZero: LDWA    -1,i        ;TODO comments
          STWA    dresult,s   ;
-endForD: LDBA    '\n',i      ;
+;The end function that prints out the equation
+;  and stores the result
+endForD: LDBA    '\n',i      ;TODO comments
          STBA    charOut,d   ;
          LDBA    div1Sign,s  ;
          CPBA    1,i         ;
