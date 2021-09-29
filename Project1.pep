@@ -123,7 +123,7 @@ multiply:SUBSP   6,i         ;push #m1Sign #m2Sign #k #result
 ;from this point on, do absolute value operations on mult1 and mult2
 ;and store their original signs in the m1Sign and m2Sign bytes
 ;so we can restore the sign later on
-chckM2:  LDWA    mult1,s     ;TODO comments
+chckM1:  LDWA    mult1,s     ;TODO comments
          CPWA    0,i         ;
          BRGT    chckM2      ;
 abs1:    NOTA                ;
