@@ -1,11 +1,12 @@
 ;********************************************************************
+; Program: Infix2Postfix Calculator
+; Class:   CSCI 2160-001
 ; Names:   Charles Kinser
+;          Drew Dorris
 ;          ADD YOUR NAME
 ;          ADD YOUR NAME
-;          ADD YOUR NAME
-; Lab:     Project
 ; Date:    9/26/2021
-; Purpose:
+; Purpose: TODO
 ;********************************************************************
 
 ;*****************************
@@ -90,222 +91,255 @@ decDone: LDWA value,d
          BR loop           
 
 postFix:  BR end ;TODO
-                  
-retVal:  .EQUATE 12          ;returned value #2d
-mult1:   .EQUATE 10          ;formal parameter #2d
-mult2:   .EQUATE 8           ;formal parameter #2d
-m1Sign:  .EQUATE 5           ;local variable #1d
-m2Sign:  .EQUATE 4           ;local variable #1d
-k:       .EQUATE 2           ;local variable #2d
-result:  .EQUATE 0           ;local variable #2d
-multiply:SUBSP   6,i         ;push #m1Sign #m2Sign #k #result 
-         LDWA    0,i
-         STWA    result,s
-         LDBA    0,i
-         STBA    m1Sign,s
-         STBA    m2Sign,s
-         LDWA    mult1,s
-         CPWA    0,i
-         BRGT    multp1
-abs1:    NOTA
-         ADDA    1,i
-         STWA    mult1,s
-         LDBA    1,i
-         STBA    m1Sign,s 
-multp1:  LDWA    mult2,s
-         CPWA    0,i
-         BRGT    multp2
-abs2:    NOTA
-         ADDA    1,i
-         STWA    mult2,s
-         LDBA    1,i
-         STBA    m2Sign,s 
-multp2:  LDWA    1,i         ;for (k = 1
-         STWA    k,s         
-forM:    CPWA    mult2,s     ;k <= mult2 
-         BRGT    endForM     
-         LDWA    result,s
-         ADDA    mult1,s
-         STWA    result,s
-         LDWA    k,s         ;k++)
-         ADDA    1,i         
-         STWA    k,s         
-         BR      forM        
-endForM: LDBA    '\n',i      ;printf("\n")
-         STBA    charOut,d
-         LDBA    m1Sign,s 
-         CPBA    1,i
-         BRNE    endForM2
-         LDBA    '-',i
-         STBA    charOut,d
-endForM2:DECO    mult1,s
-         LDBA    ' ',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    '*',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    ' ',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    m2Sign,s 
-         CPBA    1,i
-         BRNE    endForM3
-         LDBA    '-',i
-         STBA    charOut,d
-endForM3:DECO    mult2,s
-         LDBA    '\n',i
-         STBA    charOut,d
-         LDBA    m1Sign,s
-         CPBA    m2Sign,s
-         BREQ    endForM4
-         LDWA    result,s
-         NOTA
-         ADDA    1,i
-         STWA    result,s
-endForM4:LDWA    result,s
-         STWA    retVal,s
-         ADDSP   6,i         ;pop #result #k #m1Sign #m2Sign 
-         RET                  
 
-remaind: .EQUATE 14          ;returned value #2d
-retDiv:  .EQUATE 12          ;returned value #2d 
-div1:    .EQUATE 10          ;formal parameter #2d
-div2:    .EQUATE 8           ;formal parameter #2d
+
+
+;*****************************
+;*****OPERATOR FUNCTIONS******
+;*****************************
+                  
+;********* MULTIPLY **********
+retVal:  .EQUATE 12          ;returned value #2d
+mult1:   .EQUATE 10          ;formal parameter; first multiple #2d
+mult2:   .EQUATE 8           ;formal parameter; second multiple #2d
+m1Sign:  .EQUATE 5           ;local variable; sign of the first multiple #1d
+m2Sign:  .EQUATE 4           ;local variable; sign of the 2nd multiple #1d
+k:       .EQUATE 2           ;local variable #2d
+                             ;keeps track of how many times to loop and add mult1 by mult2 times
+result:  .EQUATE 0           ;local variable; calculated result #2d
+;Multiply function takes two number (word) parameters, multiplies them,
+;  and returns the result in retVal.
+;This function works by adding mult1 to itself mult2 times.
+;Ex. if mult1 is 60 and mult2 is 3, the function does 60 + 60 + 60 and returns the value
+multiply:SUBSP   6,i         ;push #m1Sign #m2Sign #k #result 
+         LDWA    0,i         ;reset possible lingering values in the stack before doing operations
+         STWA    result,s    ;TODO comments
+         LDBA    0,i         ;
+         STBA    m1Sign,s    ;
+         STBA    m2Sign,s    ;
+         LDWA    1,i         ;
+         STWA    k,s         ;
+;from this point on, do absolute value operations on mult1 and mult2
+;and store their original signs in the m1Sign and m2Sign bytes
+;so we can restore the sign later on
+         LDWA    mult1,s     ;TODO comments
+         CPWA    0,i         ;
+         BRGT    multp1      ;
+abs1:    NOTA                ;
+         ADDA    1,i         ;
+         STWA    mult1,s     ;
+         LDBA    1,i         ;
+         STBA    m1Sign,s    ;
+multp1:  LDWA    mult2,s     ;
+         CPWA    0,i         ;
+         BRGT    forM        ;
+abs2:    NOTA                ;
+         ADDA    1,i         ;
+         STWA    mult2,s     ;
+         LDBA    1,i         ;
+         STBA    m2Sign,s    ;
+;loop section
+;adds 1 to k and adds mult1 to itself repeatedly until k > mult2
+forM:    LDWA    k,s         ;load k for comparison if not loaded already, to see if we are done looping yet
+         CPWA    mult2,s     ;see if k <= mult2, which means we have added mult1 to itself mult2 times
+         BRGT    endForM     ;if so, we're done! branch to endForM
+         LDWA    result,s    ;if not, we'll keep going! load the current added result to keep adding
+         ADDA    mult1,s     ;add mult1 again
+         STWA    result,s    ;store it to result
+         LDWA    k,s         ;load k to add one to it
+         ADDA    1,i         ;add one to it so we can see when we reach mult2 and stop adding
+         STWA    k,s         ;store it to k
+         BR      forM        ;do the loop again!
+endForM: LDBA    '\n',i      ;print out newline
+         STBA    charOut,d   ;print out newline
+         LDBA    m1Sign,s    ;TODO comments
+         CPBA    1,i         ;
+         BRNE    endForM2    ;
+         LDBA    '-',i       ;
+         STBA    charOut,d   ;
+endForM2:DECO    mult1,s     ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    '*',i       ;
+         STBA    charOut,d   ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    m2Sign,s    ;
+         CPBA    1,i         ;
+         BRNE    endForM3    ;
+         LDBA    '-',i       ;
+         STBA    charOut,d   ;
+endForM3:DECO    mult2,s     ;
+         LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         LDBA    m1Sign,s    ;
+         CPBA    m2Sign,s    ;
+         BREQ    endForM4    ;
+         LDWA    result,s    ;
+         NOTA                ;
+         ADDA    1,i         ;
+         STWA    result,s    ;
+endForM4:LDWA    result,s    ;
+         STWA    retVal,s    ;
+         ADDSP   6,i         ;pop #result #k #m1Sign #m2Sign 
+         RET                 ;
+
+;********* DIVIDE/MODULO **********
+remaind: .EQUATE 14          ;returned value; remainder/modulo #2d
+retDiv:  .EQUATE 12          ;returned value; the return value/quotient #2d 
+div1:    .EQUATE 10          ;formal parameter; dividend #2d
+div2:    .EQUATE 8           ;formal parameter; divisor #2d
 div1Sign:.EQUATE 5           ;local variable #1d
 div2Sign:.EQUATE 4           ;local variable #1d
 dk:      .EQUATE 2           ;local variable #2d
 dresult: .EQUATE 0           ;local variable #2d
+;Divide function takes two number (word) parameters, divides them,
+;  and returns the quotient in retDiv as well as the remainder/modulo in remaind.
+;This function works by adding div2 to itself until it is greater than div1.
+;The amount of times div2 was added to itself is the result.
+;Ex. if div1 is 60 and div2 is 3, the function does 3 + 3 + .... until it reaches 60
+;  and counts how many times it added it
 divide:  SUBSP   6,i         ;push #div1Sign #div2Sign #dk #dresult 
-         LDWA    0,i
-         STWA    dresult,s
-         STWA    dk,s         
-         STWA    remaind,s
-         LDBA    0,i
-         STBA    div1Sign,s
-         STBA    div2Sign,s
-         LDWA    div1,s 
-         CPWA    0,i
-         BRGT    divp1
-absD1:   NOTA    
-         ADDA    1,i
-         STWA    div1,s
-         LDBA    1,i
-         STBA    div1Sign,s
-divp1:   LDWA    div2,s
-         CPWA    0,i
-         BREQ    divZero
-         BRGT    divp2
-absD2:   NOTA
-         ADDA    1,i
-         STWA    div2,s
-         LDBA    1,i
-         STBA    div2Sign,s
-divp2:   LDWA    0,i         ;for (k = 1
-         STWA    dk,s         
-         LDWA    dk,s
-forD:    CPWA    div1,s     ;dk >= div1
-         BRGE    checkRmd   
-         LDWA    dk,s
-         ADDA    div2,s 
-         STWA    dk,s
-         LDWA    dresult,s         ;k++)
-         ADDA    1,i         
-         STWA    dresult,s
-         LDWA    dk,s         
-         BR      forD       
-checkRmd:LDWA    dk,s
-         CPWA    div1,s
-         BREQ    endForD
-         LDWA    dresult,s
-         SUBA    1,i
-         STWA    dresult,s
-         LDWA    dk,s
-         SUBA    div2,s
-         STWA    dk,s
-         LDWA    div1,s
-         SUBA    dk,s
-         STWA    remaind,s
-         BR      endForD
-divZero: LDWA    -1,i
-         STWA    dresult,s
-endForD: LDBA    '\n',i      ;printf("\n")
-         STBA    charOut,d
-         LDBA    div1Sign,s 
-         CPBA    1,i
-         BRNE    endForD2
-         LDBA    '-',i
-         STBA    charOut,d
-endForD2:DECO    div1,s
-         LDBA    ' ',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    '/',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    ' ',i      ;printf(" ")
-         STBA    charOut,d
-         LDBA    div2Sign,s 
-         CPBA    1,i
-         BRNE    endForD3
-         LDBA    '-',i
-         STBA    charOut,d
-endForD3:DECO    div2,s
-         LDBA    '\n',i
-         STBA    charOut,d
-         LDBA    div1Sign,s 
-         CPBA    div2Sign,s 
-         BREQ    endForD4
-         LDWA    dresult,s
-         NOTA
-         ADDA    1,i
-         STWA    dresult,s
-         LDWA    remaind,s
-         NOTA
-         ADDA    1,i
-         STWA    remaind,s
-endForD4:LDWA    dresult,s
-         STWA    retDiv,s
+         LDWA    0,i         ;TODO comments
+         STWA    dresult,s   ;
+         STWA    dk,s        ;
+         STWA    remaind,s   ;
+         LDBA    0,i         ;
+         STBA    div1Sign,s  ;
+         STBA    div2Sign,s  ;
+;from this point on, do absolute value operations on div1 and div2
+;and store their original signs in the div1Sign and div2Sign bytes
+;so we can restore the sign later on
+         LDWA    div1,s      ;TODO comments
+         CPWA    0,i         ;
+         BRGT    divp1       ;
+absD1:   NOTA                ;
+         ADDA    1,i         ;
+         STWA    div1,s      ;
+         LDBA    1,i         ;
+         STBA    div1Sign,s  ;
+divp1:   LDWA    div2,s      ;
+         CPWA    0,i         ;
+         BREQ    divZero     ;
+         BRGT    divp2       ;
+absD2:   NOTA                ;
+         ADDA    1,i         ;
+         STWA    div2,s      ;
+         LDBA    1,i         ;
+         STBA    div2Sign,s  ;
+divp2:   LDWA    0,i         ;
+         STWA    dk,s        ;
+         LDWA    dk,s        ;
+forD:    CPWA    div1,s      ;
+         BRGE    checkRmd    ;
+         LDWA    dk,s        ;
+         ADDA    div2,s      ;
+         STWA    dk,s        ;
+         LDWA    dresult,s   ;
+         ADDA    1,i         ;
+         STWA    dresult,s   ;
+         LDWA    dk,s        ;
+         BR      forD        ;
+checkRmd:LDWA    dk,s        ;
+         CPWA    div1,s      ;
+         BREQ    endForD     ;
+         LDWA    dresult,s   ;
+         SUBA    1,i         ;
+         STWA    dresult,s   ;
+         LDWA    dk,s        ;
+         SUBA    div2,s      ;
+         STWA    dk,s        ;
+         LDWA    div1,s      ;
+         SUBA    dk,s        ;
+         STWA    remaind,s   ;
+         BR      endForD     ;
+divZero: LDWA    -1,i        ;
+         STWA    dresult,s   ;
+endForD: LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         LDBA    div1Sign,s  ;
+         CPBA    1,i         ;
+         BRNE    endForD2    ;
+         LDBA    '-',i       ;
+         STBA    charOut,d   ;
+endForD2:DECO    div1,s      ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    '/',i       ;
+         STBA    charOut,d   ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    div2Sign,s  ;
+         CPBA    1,i         ;
+         BRNE    endForD3    ;
+         LDBA    '-',i       ;
+         STBA    charOut,d   ;
+endForD3:DECO    div2,s      ;
+         LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         LDBA    div1Sign,s  ;
+         CPBA    div2Sign,s  ;
+         BREQ    endForD4    ;
+         LDWA    dresult,s   ;
+         NOTA                ;
+         ADDA    1,i         ;
+         STWA    dresult,s   ;
+         LDWA    remaind,s   ;
+         NOTA                ;
+         ADDA    1,i         ;
+         STWA    remaind,s   ;
+endForD4:LDWA    dresult,s   ;
+         STWA    retDiv,s    ;
          ADDSP   6,i         ;pop #result #k #div2Sign #div1Sign 
-         RET
+         RET                 ;
 
-;******* void printBar(int n)
+;********* ADD **********
 retAdd:  .EQUATE 6           ;returned value #2d 
-add1:   .EQUATE 4           ;formal parameter #2d 
-add2:   .EQUATE 2           ;formal parameter #2d
-add:     LDWA    add1,s
-         ADDA    add2,s
-         STWA    retAdd,s
-         BR      endForA
-endForA: LDBA    '\n',i      ;printf("\n")
-         STBA    charOut,d
-         DECO    add1,s
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d
-         LDBA    '+',i       ;printf(" ")
-         STBA    charOut,d
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d
-         DECO    add2,s
-         LDBA    '\n',i
-         STBA    charOut,d
-         RET   
+add1:    .EQUATE 4           ;formal parameter #2d 
+add2:    .EQUATE 2           ;formal parameter #2d
+;Add function takes two input (add1, add2), adds them together,
+;  and returns result in retAdd.
+add:     LDWA    add1,s      ;load first value to accumulator
+         ADDA    add2,s      ;add second value to it
+         STWA    retAdd,s    ;store in the result
+         BR      endForA     ;move to the end!
+endForA: LDBA    '\n',i      ;TODO comments
+         STBA    charOut,d   ;
+         DECO    add1,s      ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    '+',i       ;
+         STBA    charOut,d   ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         DECO    add2,s      ;
+         LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         RET                 ;
 
+;********* SUBTRACT **********
 retSub:  .EQUATE 6           ;returned value #2d 
 sub1:    .EQUATE 4           ;formal parameter #2d 
 sub2:    .EQUATE 2           ;formal parameter #2d
-sub:     LDWA    sub1,s
-         SUBA    sub2,s
-         STWA    retSub,s
-         BR      endForS
-endForS: LDBA    '\n',i      ;printf("\n")
-         STBA    charOut,d
-         DECO    sub1,s
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d
-         LDBA    '-',i       ;printf(" ")
-         STBA    charOut,d
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d
-         DECO    sub2,s
-         LDBA    '\n',i
-         STBA    charOut,d
-         RET  
+;Subtract function takes two input (sub1, sub2), subtracts sub2 from sub1,
+;  and returns result in retSub.
+sub:     LDWA    sub1,s      ;load first value to accumulator
+         SUBA    sub2,s      ;subtract the second
+         STWA    retSub,s    ;store result in retSub
+         BR      endForS     ;move to the end!
+endForS: LDBA    '\n',i      ;TODO comments
+         STBA    charOut,d   ;
+         DECO    sub1,s      ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    '-',i       ;
+         STBA    charOut,d   ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         DECO    sub2,s      ;
+         LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         RET                 ;
          
 end:     .END
          
