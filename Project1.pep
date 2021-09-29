@@ -96,6 +96,8 @@ postFix:  BR end ;TODO
 
 ;*****************************
 ;*****OPERATOR FUNCTIONS******
+;Operator functions can handle any shorts (-65535 to 65535)
+;But cannot handle calculations above/below that
 ;*****************************
                   
 ;********* MULTIPLY **********
