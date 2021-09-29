@@ -186,6 +186,12 @@ endForM3:DECO    mult2,s     ;
          STWA    result,s    ;
 endForM4:LDWA    result,s    ;
          STWA    retVal,s    ;
+         LDWA    0,i         ;cleanup
+         STWA    k,s
+         STWA    result,s
+         LDBA    0,i
+         STBA    m1Sign,s
+         STBA    m2Sign,s
          ADDSP   6,i         ;pop #result #k #m1Sign #m2Sign 
          RET                 ;
 
@@ -302,7 +308,13 @@ endForD3:DECO    div2,s      ;
          STWA    remaind,s   ;
 endForD4:LDWA    dresult,s   ;
          STWA    retDiv,s    ;
-         ADDSP   6,i         ;pop #result #k #div2Sign #div1Sign 
+         LDWA    0,i         ;cleanup
+         STWA    dk,s
+         STWA    dresult,s
+         LDBA    0,i
+         STBA    div1Sign,s
+         STBA    div2Sign,s
+         ADDSP   6,i         ;pop #dresult #dk #div2Sign #div1Sign 
          RET                 ;
 
 ;********* ADD **********
