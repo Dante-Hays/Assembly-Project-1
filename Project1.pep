@@ -51,15 +51,17 @@ loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3
          LDBA charIn,d
          SUBA 0x30,i         ;convert to deci
          STWA num3,d
-         
-         LDWA skipNum,d
+
+         ;the skip check code is used to skip over unwanted/extra input characters
+         ;for example, after reading in AND, reading the ND in the next loop should be avoided   
+         LDWA skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
          CPWA 0,i
          BREQ goOn
-         SUBA 1,i
+         SUBA 1,i            ;decrement skipNum by 1
          STWA skipNum,d
-         BR loop
+         BR loop             ;go back to start of loop without checking current input char
          
-goOn:    LDWA num1,d         ;if num1 is not deci, store as char, else add to value
+goOn:    LDWA num1,d         ;if num1 is not deci, store as char, else add it to value
          CPWA 9,i            ;check for int by checking for range 0
          BRGT notDec
          CPWA 0,i
@@ -90,9 +92,9 @@ notDec:  ADDA 0x30,i         ;convert back to ascii char
          CPWA 0x000A,i       ;check if input is finished by looking for LB, if so, move to postFix
          BREQ postFix 
 
-         CPWA '-',i
+         CPWA '-',i          ;go to negChk to determine if the - is a minus sign or a negative sign
          BREQ negChk
-         CPWA '+',i
+         CPWA '+',i          ;If the current character matches a simple op. simply store it
          BREQ arayStor
          CPWA '*',i
          BREQ arayStor
@@ -101,74 +103,74 @@ notDec:  ADDA 0x30,i         ;convert back to ascii char
          CPWA '%',i
          BREQ arayStor
          
-andChk:  CPWA 'A',i
+andChk:  CPWA 'A',i          ;Check for the AND characters in series
          BRNE orChk
          LDWA num2,d
-         ADDA 0x30,i
+         ADDA 0x30,i         ;convert back to ascii char 
          CPWA 'N',i
-         BRNE end ;ERROR
+         BRNE end            ;ERROR, incomplete/invalid operator
          LDWA num3,d
-         ADDA 0x30,i
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA 'D',i
-         BRNE end ;ERROR
-         LDWA 2,i
-         STWA skipNum,d
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 2,i            ;load value into skipNum to skip over excess character(s) (N and D)
+         STWA skipNum,d      
          LDWA '&',i
          BR arayStor
 
-orChk:   LDWA num1,d
-         ADDA 0x30,i
+orChk:   LDWA num1,d         ;Check for the OR characters in series
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA 'O',i
          BRNE lShftChk
          LDWA num2,d
-         ADDA 0x30,i 
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA 'R',i
-         BRNE end ;ERROR
-         LDWA 1,i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
          STWA skipNum,d
          LDWA '\|',i
          BR arayStor
 
-lShftChk:LDWA num1,d
-         ADDA 0x30,i
+lShftChk:LDWA num1,d         ;Check for the << characters in series
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA '<',i
          BRNE rShftChk
          LDWA num2,d
-         ADDA 0x30,i
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA '<',i
-         BRNE end ;ERROR
-         LDWA 1,i
-         STWA skipNum,d
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
+         STWA skipNum,d      
          LDWA '<',i
          BR arayStor
 
-rShftChk:LDWA num1,d
-         ADDA 0x30,i
+rShftChk:LDWA num1,d         ;Check for the >> or >>> characters in series
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA '>',i
          BRNE rLog
          LDWA num2,d
-         ADDA 0x30,i
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA '>',i
-         BRNE end ;ERROR
+         BRNE end            ;ERROR, incomplete/invalid operator
          LDWA num3,d
-         ADDA 0x30,i
+         ADDA 0x30,i         ;convert back to ascii char
          CPWA '>',i
          BREQ rLog
-         LDWA 1,i
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
          STWA skipNum,d
          LDWA '}',i
          BR arayStor
-rLog:    LDWA 2,i
+rLog:    LDWA 2,i            ;load value into skipNum to skip over excess character(s)
          STWA skipNum,d
          LDWA '>',i
          BR arayStor 
          
-negChk:  LDWA expNum,d
+negChk:  LDWA expNum,d       ;if expecting an int, set next integer to be negative, else, store a minus sign into array
          CPWA 0x0001,i
          BREQ negT
          LDWA '-',i
          BR arayStor
-negT:    LDWA 1,i
+negT:    LDWA 1,i            ;set next integer to be negative
          STWA nextNeg,d
          BR loop
 
