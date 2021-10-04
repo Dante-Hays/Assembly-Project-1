@@ -91,6 +91,8 @@ notDec:  ADDA 0x30,i         ;convert back to ascii char
 
          CPWA 0x000A,i       ;check if input is finished by looking for LB, if so, move to postFix
          BREQ postFix 
+         CPWA 0x0020,i       ;check for white space and skip over if found
+         BREQ loop
 
          CPWA '-',i          ;go to negChk to determine if the - is a minus sign or a negative sign
          BREQ negChk
@@ -100,7 +102,7 @@ notDec:  ADDA 0x30,i         ;convert back to ascii char
          BREQ arayStor
          CPWA '/',i
          BREQ arayStor
-         CPWA '%',i
+         CPWA '%',i 
          BREQ arayStor
          
 andChk:  CPWA 'A',i          ;Check for the AND characters in series
