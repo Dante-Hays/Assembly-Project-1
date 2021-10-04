@@ -364,6 +364,39 @@ endForS: LDBA    '\n',i      ;TODO comments
          LDBA    '\n',i      ;
          STBA    charOut,d   ;
          RET                 ;
+
+;********* XOR ********** TODO fix comments
+retXor:  .EQUATE 10          ;returned value #2d 
+xor1:    .EQUATE 8           ;formal parameter #2d 
+xor2:    .EQUATE 6           ;formal parameter #2d
+tempx1:  .EQUATE 2           ;local variable #2d
+tempx2:  .EQUATE 0           ;local variable #2d
+;Subtract function takes two input (sub1, sub2), subtracts sub2 from sub1,
+;  and returns result in retSub.
+xor:     SUBSP   4,i         ;push #tempx1 #tempx2
+         LDWA    xor1,s      ;load first value to accumulator
+         ANDA    xor2,s      ;and the second
+         STWA    tempx1,s
+         LDWA    xor1,s
+         ORA     xor2,s
+         STWA    tempx2,s
+         SUBA    tempx1,s
+         STWA    retXor,s    ;store result in retSub\
+         BR      endForX     ;move to the end!
+endForX: LDBA    '\n',i      ;TODO comments
+         STBA    charOut,d   ;
+         DECO    xor1,s      ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         LDBA    'X',i       ;
+         STBA    charOut,d   ;
+         LDBA    ' ',i       ;
+         STBA    charOut,d   ;
+         DECO    xor2,s      ;
+         LDBA    '\n',i      ;
+         STBA    charOut,d   ;
+         ADDSP   4,i         ;pop #tempx1 #tempx2
+         RET                 ;
          
 end:     .END
          
