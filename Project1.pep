@@ -15,30 +15,54 @@
 
 skip:    BR main
 
-inVec:   .BLOCK  128         ;array of characters and values from input, global array #2c64a
-                             ;the input is convereted into an array to allow access multiple times 
+inVec:   .BLOCK  128         ;array of characters and values from input, global array #2d64a
+                             ;the input is convereted into an array to allow access multiple times
+                             ;and to simplify expressions for other methods 
 vecI:    .WORD   0           ;store current index of inVec array when register is in use #2d
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
-
-num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d 
-num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d 
-value:   .WORD   0           ;temporary storage for integer intake #2d
 
 ;*****************************
 ;INPUT TO ARRAY
 ;*****************************
 
+;LOCAL VARIABLES
+
+expNum:  .WORD   0           ;true or false for expecting next input to be number #2d
+nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
+skipNum: .WORD   0           ;the number of times to skip checking the input #2d
+
+value:   .WORD   0           ;temporary storage for integer intake #2d
+num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d 
+num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
+num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d 
+
+;MAIN
+
 main:    LDBA charIn,d       ;prep for first run by populating num2
          SUBA 0x30,i         ;convert to deci
          STWA num2,d
-loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- charIn
+         LDBA charIn,d       ;prep for first run by populating num3
+         SUBA 0x30,i         ;convert to deci
+         STWA num3,d
+loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
          STWA num1,d
+         LDWA num3,d
+         STWA num2,d
          LDWA 0x0000,i       ;clear accumulator
          LDBA charIn,d
          SUBA 0x30,i         ;convert to deci
-         STWA num2,d
+         STWA num3,d
+
+         ;the skip check code is used to skip over unwanted/extra input characters
+         ;for example, after reading in AND, reading the ND in the next loop should be avoided   
+         LDWA skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
+         CPWA 0,i
+         BREQ goOn
+         SUBA 1,i            ;decrement skipNum by 1
+         STWA skipNum,d
+         BR loop             ;go back to start of loop without checking current input char
          
-         LDWA num1,d         ;if num1 is not deci, store as char, else add to value
+goOn:    LDWA num1,d         ;if num1 is not deci, store as char, else add it to value
          CPWA 9,i            ;check for int by checking for range 0
          BRGT notDec
          CPWA 0,i
@@ -47,38 +71,134 @@ loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- charIn
          STWA value,d
 
          
-         LDWA num2,d         ;if num2 is not deci, handle the char, else multiply value by 10
+         LDWA num2,d         ;if num2 is not deci, store current value, else multiply value by 10
          CPWA 9,i
          BRGT decDone
          CPWA 0,i
          BRLT decDone
-         LDWA value,d
-         LDWA 10,i       ;move value
+         LDWA 10,i           ;Call the multiplication function to multiply 'value' by 10
          STWA -4,s         
          LDWA value,d
          STWA -6,s
-         SUBSP 6,i         ;push #retVal #mult1 #mult2 
+         SUBSP 6,i           ;push #retVal #mult1 #mult2 
          CALL  multiply    
          LDWA 4,s
          STWA value,d
-         ADDSP 6,i         ;pop #mult2 #mult1 #retVal 
+         ADDSP 6,i           ;pop #mult2 #mult1 #retVal 
+         BR loop             ;loop back to get next digit
+
+;Check for character(s) type and convert to a singular operand for array storage.
+notDec:  ADDA 0x30,i         ;convert back to ascii char
+
+         CPWA 0x000A,i       ;check if input is finished by looking for LB, if so, move to postFix
+         BREQ postFix 
+         CPWA 0x0020,i       ;check for white space and skip over if found
+         BREQ loop
+
+         CPWA '-',i          ;go to negChk to determine if the - is a minus sign or a negative sign
+         BREQ negChk
+         CPWA '+',i          ;If the current character matches a simple op. simply store it
+         BREQ arayStor
+         CPWA '*',i
+         BREQ arayStor
+         CPWA '/',i
+         BREQ arayStor
+         CPWA '%',i 
+         BREQ arayStor
+         
+andChk:  CPWA 'A',i          ;Check for the AND characters in series
+         BRNE orChk
+         LDWA num2,d
+         ADDA 0x30,i         ;convert back to ascii char 
+         CPWA 'N',i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA num3,d
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA 'D',i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 2,i            ;load value into skipNum to skip over excess character(s) (N and D)
+         STWA skipNum,d      
+         LDWA '&',i
+         BR arayStor
+
+orChk:   LDWA num1,d         ;Check for the OR characters in series
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA 'O',i
+         BRNE lShftChk
+         LDWA num2,d
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA 'R',i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
+         STWA skipNum,d
+         LDWA '\|',i
+         BR arayStor
+
+lShftChk:LDWA num1,d         ;Check for the << characters in series
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA '<',i
+         BRNE rShftChk
+         LDWA num2,d
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA '<',i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
+         STWA skipNum,d      
+         LDWA '<',i
+         BR arayStor
+
+rShftChk:LDWA num1,d         ;Check for the >> or >>> characters in series
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA '>',i
+         BRNE rLog
+         LDWA num2,d
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA '>',i
+         BRNE end            ;ERROR, incomplete/invalid operator
+         LDWA num3,d
+         ADDA 0x30,i         ;convert back to ascii char
+         CPWA '>',i
+         BREQ rLog
+         LDWA 1,i            ;load value into skipNum to skip over excess character(s)
+         STWA skipNum,d
+         LDWA '}',i
+         BR arayStor
+rLog:    LDWA 2,i            ;load value into skipNum to skip over excess character(s)
+         STWA skipNum,d
+         LDWA '>',i
+         BR arayStor 
+         
+negChk:  LDWA expNum,d       ;if expecting an int, set next integer to be negative, else, store a minus sign into array
+         CPWA 1,i
+         BREQ negT
+         LDWA '-',i
+         BR arayStor
+negT:    LDWA 1,i            ;set next integer to be negative
+         STWA nextNeg,d
          BR loop
 
-notDec:  ADDA 0x30,i         ;convert back to ascii char
-         CPWA 0x000A,i       ;check if input is finished, if so, move to postFix
-         BREQ postFix 
-         LDWX vecI,d         ;load inVec index
+;add current accumulator word to the array
+arayStor:LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
          ADDA 2,i
          STWA vecI,d
-         ASRA
+         ASRA                ;set length of array
          STWA inVecL,d 
          LDWA 0,i            ;reset value 
-         STWA value,d  
+         STWA value,d 
+         LDWA 1,i            ;expecting decimal is now true
+         STWA expNum,d
          BR loop           
-             
-decDone: LDWA value,d
+;store the value of the current int after combining digit characters into one int             
+decDone: LDWA nextNeg,d      ;if a negative sign was found, negate the value, else skip
+         CPWA 0,i
+         BREQ pos
+         LDWA value,d
+         NEGA
+         STWA value,d
+
+pos:     LDWA value,d
          LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
@@ -88,6 +208,8 @@ decDone: LDWA value,d
          STWA inVecL,d
          LDWA 0,i            ;reset value
          STWA value,d 
+         STWA expNum,d       ;expecting decimal is now false
+         STWA nextNeg,d      ;any negative symbol have now been processed, set to false
          BR loop           
 
 postFix:  BR end ;TODO
