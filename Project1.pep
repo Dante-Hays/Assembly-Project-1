@@ -190,10 +190,9 @@ arayStor:LDWX vecI,d         ;load inVec index
          STWA expNum,d
          BR loop           
 ;store the value of the current int after combining digit characters into one int             
-decDone: LDWA nextNeg,d      ;if current decimal is negative, multiply by -1, else skip
+decDone: LDWA nextNeg,d      ;if a negative sign was found, negate the value, else skip
          CPWA 0,i
          BREQ pos
-
          LDWA value,d
          NEGA
          STWA value,d
