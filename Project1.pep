@@ -168,7 +168,7 @@ rLog:    LDWA 2,i            ;load value into skipNum to skip over excess charac
          BR arayStor 
          
 negChk:  LDWA expNum,d       ;if expecting an int, set next integer to be negative, else, store a minus sign into array
-         CPWA 0x0001,i
+         CPWA 1,i
          BREQ negT
          LDWA '-',i
          BR arayStor
@@ -190,8 +190,15 @@ arayStor:LDWX vecI,d         ;load inVec index
          STWA expNum,d
          BR loop           
 ;store the value of the current int after combining digit characters into one int             
-decDone: LDWA value,d
-         ORA  nextNeg,d      ;apply negative mask
+decDone: LDWA nextNeg,d      ;if current decimal is negative, multiply by -1, else skip
+         CPWA 0,i
+         BREQ pos
+
+         LDWA value,d
+         NEGA
+         STWA value,d
+
+pos:     LDWA value,d
          LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
@@ -202,6 +209,7 @@ decDone: LDWA value,d
          LDWA 0,i            ;reset value
          STWA value,d 
          STWA expNum,d       ;expecting decimal is now false
+         STWA nextNeg,d      ;any negative symbol have now been processed, set to false
          BR loop           
 
 postFix:  BR end ;TODO
