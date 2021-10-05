@@ -37,7 +37,8 @@ num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the curren
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d 
 
-errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator: \x00"
+errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator At: \x00"
+errMsg2: .ASCII  "SYNTAX ERROR: Expected Integer At: \x00"
 
 ;MAIN
 
@@ -103,7 +104,14 @@ notDec:  LDBA    1,i         ;set is char to true
          BREQ    loop
 
          CPWA    '-',i       ;go to negChk to determine if the - is a minus sign or a negative sign
-         BREQ    negChk      
+         BREQ    negChk 
+
+         LDWA    expNum,d    ;error out if expecting number
+         CPWA    1,i
+         BREQ    noNum
+         
+         LDWA    num1,d
+         ADDA    0x30,i
          CPWA    '+',i       ;If the current character matches a simple op. assign precedence and store accordingly
          BREQ    prc5        
          CPWA    '*',i       
@@ -184,7 +192,7 @@ rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    badOp       ;ERROR, incomplete/invalid operator
+         BRNE    rLog
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
@@ -208,6 +216,12 @@ negT:    LDWA    1,i         ;set next integer to be negative
          BR      loop
 
 badOp:   STRO    errMsg,d    ;output a message explaining the error
+         LDWA    num1,d      ;display bad operator
+         ADDA    0x30,i
+         STBA    charOut,d
+         BR      end
+
+noNum:   STRO    errMsg2,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
@@ -239,8 +253,8 @@ arayStor:LDWX    vecI,d      ;load inVec index
 decDone: LDBA    1,i         ;set is deci to true
          STBA    isDeci,d
          LDWA nextNeg,d      ;if a negative sign was found, negate the value, else skip
-         CPWA 0,i
-         BREQ pos
+         CPWA 1,i
+         BRNE pos
          LDWA value,d
          NEGA
          STWA value,d 
