@@ -2,7 +2,7 @@
 ; Names:   Charles Kinser
 ;          Drew Dorris
 ;          Dante Hays
-;          ADD YOUR NAME
+;          Matthew Lockard
 ; Lab:     Project
 ; Date:    9/26/2021
 ; Purpose:
