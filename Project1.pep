@@ -34,7 +34,8 @@ value:   .WORD   0           ;temporary storage for integer intake #2d
 num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d
-operand: .WORD   2           
+operand: .WORD   0           ;variable for storing operand
+opTemp:  .WORD   0           ;temp var for storing operand while swapping
 
 ;MAIN
 
@@ -97,22 +98,22 @@ notDec:  LDWA    num1,d      ;load current operator to A
          CPWA    '-',i       ;go to negChk to determine if the - is a minus sign or a negative sign
          BREQ    negChk      
          CPWA    '+',i       ;If the current character matches a simple op. assign precedence and store accordingly
-         BREQ    prc5        
+         BREQ    setAdd      
          CPWA    '*',i       
-         BREQ    prc6        
+         BREQ    setMult     
          CPWA    '/',i       
-         BREQ    prc6        
+         BREQ    setDiv      
          CPWA    '%',i       
-         BREQ    prc6        
+         BREQ    setMod      
          CPWA    '\|',i      
-         BREQ    prc1        
+         BREQ    setOr       
          CPWA    '&',i       
-         BREQ    prc3        
+         BREQ    setAnd      
          CPWA    '^',i       
-         BREQ    prc2        
+         BREQ    setXor      
 
 andChk:  CPWA    'A',i       ;Check for the AND characters in series
-         BRNE    orChk       
+         BRNE    xorChk       
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'N',i       
@@ -123,8 +124,8 @@ andChk:  CPWA    'A',i       ;Check for the AND characters in series
          BRNE    end         ;ERROR, incomplete/invalid operator
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
-         LDWA    '&',i 
-         STWA    operand,d      
+         LDWA    '&',i       
+         STWA    operand,d   
          BR      prc3        
 
 xorChk:  LDWA    num1,d      ;Check for the XOR characters in series
@@ -141,8 +142,8 @@ xorChk:  LDWA    num1,d      ;Check for the XOR characters in series
          BRNE    end         ;ERROR, incomplete/invalid operator
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
-         LDWA    '^',i
-         STWA    operand,d       
+         LDWA    '^',i       
+         STWA    operand,d   
          BR      prc2        
 
 orChk:   LDWA    num1,d      ;Check for the OR characters in series
@@ -155,8 +156,8 @@ orChk:   LDWA    num1,d      ;Check for the OR characters in series
          BRNE    end         ;ERROR, incomplete/invalid operator
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
-         LDWA    '\|',i
-         STWA    operand,d      
+         LDWA    '\|',i      
+         STWA    operand,d   
          BR      prc1        
 
 lShftChk:LDWA    num1,d      ;Check for the << characters in series
@@ -169,8 +170,8 @@ lShftChk:LDWA    num1,d      ;Check for the << characters in series
          BRNE    end         ;ERROR, incomplete/invalid operator
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
-         LDWA    '<',i
-         STWA    operand,d       
+         LDWA    '<',i       
+         STWA    operand,d   
          BR      prc4        ;assign precedence for operator and store
 
 rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
@@ -187,23 +188,47 @@ rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          BREQ    rLog        
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
-         LDWA    '}',i 
-         STWA    operand,d      
+         LDWA    '}',i       
+         STWA    operand,d   
          BR      prc4        ;assign precedence for operator and store
 rLog:    LDWA    2,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
-         LDWA    '>',i
-         STWA    operand,d       
+         LDWA    '>',i       
+         STWA    operand,d   
          BR      prc4        ;assign precedence for operator and store
 
 negChk:  LDWA    expNum,d    ;if expecting an int, set next integer to be negative, else, store a minus sign into array
          CPWA    0x0001,i    
          BREQ    negT        
          LDWA    '-',i       
-         BR      prc5        ;assign precedence for operator and store
+         BR      setSub      ;assign precedence for operator and store
 negT:    LDWA    1,i         ;set next integer to be negative
          STWA    nextNeg,d   
          BR      loop        
+
+setAdd:  STWA    operand,d   ;store operand and set precedence
+         BR      prc5        
+
+setSub:  STWA    operand,d   ;store operand and set precedence
+         BR      prc5        
+
+setMult: STWA    operand,d   ;store operand and set precedence
+         BR      prc6        
+
+setDiv:  STWA    operand,d   ;store operand and set precedence
+         BR      prc6        
+
+setMod:  STWA    operand,d   ;store operand and set precedence
+         BR      prc6        
+
+setAnd:  STWA    operand,d   ;store operand and set precedence
+         BR      prc3        
+
+setOr:   STWA    operand,d   ;store operand and set precedence
+         BR      prc1        
+
+setXor:  STWA    operand,d   ;store operand and set precedence
+         BR      prc2        
 
 ;add current accumulator word to the array and prints it to the output
 arayStor:STBA    charOut,d   ;print the operator to the output
@@ -340,8 +365,7 @@ chkPrc:  LDWX    prcIndex,d  ;load precedence array index
          BR      swapOp      ;else swap the operators
 
 ;Stores the current operator to the operator array
-opAryStr:LDWA    num1,d      ;load current op
-         ADDA    0x0030,i    ;convert to ascii char
+opAryStr:LDWA    operand,d   ;load operand to A
          LDWX    opIndex,d   ;load operator array index
          STWA    opArray,x   ;store op in array
          LDWA    opIndex,d   ;increment op index
@@ -353,16 +377,21 @@ opAryStr:LDWA    num1,d      ;load current op
          STWA    expNum,d    
          BR      loop        
 
-;Swaps the new operator and previous operator before inserting the
+;Swaps the new operator and previous operator then inserts the
 ;previous operator to the output stack
 swapOp:  LDBA    1,i         ;set swap to true
          STBA    swapTrue,d  
+         LDWA    operand,d   ;load current operand to A
+         STWA    opTemp,d    ;store it to a temp var
          LDWX    opIndex,d   ;load operator array index
          SUBX    2,i         ;decrement to previously stored operator
          STWX    opIndex,d   ;store the new operator index
          LDWA    opArray,x   ;store the op to A
+         STWA    operand,d   ;store the operand
          BR      arayStor    ;store the operator in the output array
-swapped: LDWX    prcIndex,d  ;load precedence array index
+swapped: LDWA    opTemp,d    ;load the temp var for the operand that was swapped
+         STWA    operand,d   ;store it back as the current operand
+         LDWX    prcIndex,d  ;load precedence array index
          SUBX    2,i         ;decrement by one operator
          STWX    prcIndex,d  ;store new index
          SUBX    2,i         ;overwrite previous top op precedence
@@ -373,17 +402,18 @@ swapDone:LDBA    0,i         ;set swap to false
          STBA    swapTrue,d  
          BR      opAryStr    ;store the new operator in the op array
 
-;Loops through the operator stack and stores all operators to the output
+;Loops through the operator array and stores all operators to the output
 addOps:  LDBA    1,i         ;set add to true
          STBA    addTrue,d   
          LDWX    opIndex,d   ;load the top operator index
          CPWX    0,i         ;if the array still has elements continue
-         BREQ    end         ;else branch to solve
-;******************************************This is the end of the postfix********************************************
-;******************************************will need to branch to solve**********************************************
+         BREQ    end         ;else branch to solve                 ******TODO BRANCH TO SOLVE, PRINTED POSTFIX ALREADY********
+                                                                  ;******HAS TRAILING WHITESPACE JUST ADD = AND SOLUTION******    
+                                                  
          SUBX    2,i         ;move to the top operator
          STWX    opIndex,d   ;store the new index
-         LDWA    opArray,x   ;store the op to A
+         LDWA    opArray,x   ;load the op to A
+         STWA    operand,d   ;store the operand
          BR      arayStor    ;store the value to the output array
 
 ;*****OPERATOR FUNCTIONS******
@@ -617,29 +647,39 @@ and2:    .WORD   0           ;formal parameter #2d
 and:     LDWA    and1,d      ;load first param to A
          ANDA    and2,d      ;bitwise and with second param
          STWA    retAnd,d    ;store result in retAnd
-         RET
+         RET                 
 
 ;********* OR ***********
 ;does a bitwise or of two parameters
-retOr:  .WORD   0           ;returned value from bitwise or #2d
-or1:    .WORD   0           ;formal parameter #2d
-or2:    .WORD   0           ;formal parameter #2d
+retOr:   .WORD   0           ;returned value from bitwise or #2d
+or1:     .WORD   0           ;formal parameter #2d
+or2:     .WORD   0           ;formal parameter #2d
 
-or:      LDWA    or1,d      ;load first param to A
-         ORA     or2,d      ;bitwise or with second param
-         STWA    retOr,d    ;store result in retOr 
-         RET
+or:      LDWA    or1,d       ;load first param to A
+         ORA     or2,d       ;bitwise or with second param
+         STWA    retOr,d     ;store result in retOr
+         RET                 
 
-;********* ARITHMETIC LEFT SHIFT ***********
-retAls:  .WORD   0           ;returned value from bitwise arith left shift #2d
-als1:    .WORD   0           ;formal parameter #2d
-als2:    .WORD   0           ;formal parameter #2de
+;********* ARITHMETIC RIGHT SHIFT ***********
+retArs:  .WORD   0           ;returned value from bitwise arith right shift #2d
+ars1:    .WORD   0           ;formal parameter #2d
+ars2:    .WORD   0           ;formal parameter #2de
 
-als:     RET
+ars:     RET
 
-;********* LOGICAL LEFT SHIFT ***********
+;********* LOGICAL RIGHT SHIFT ***********
+retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
+lrs1:    .WORD   0           ;formal parameter #2d
+lrs2:    .WORD   0           ;formal parameter #2de
 
-;********* RIGHT SHIFT ***********
+lrs:     RET                 
 
-end:     .END         
+;********* LEFT SHIFT ***********
+retLefts:  .WORD   0           ;returned value from bitwise left shift #2d
+lefts1:    .WORD   0           ;formal parameter #2d
+lefts2:    .WORD   0           ;formal parameter #2de
+
+lefts:     RET  
+
+end:     .END               
          
