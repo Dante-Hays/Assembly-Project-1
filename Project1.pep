@@ -38,13 +38,13 @@ num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to lo
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d 
 
 errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator: \x00"
-errMsg2: .ASCII  "bad operator input index: \x00"
 
 ;MAIN
 
 main:    LDBA    charIn,d       ;prep for first run by populating num2
          SUBA    0x30,i         ;convert to deci
          STWA    num2,d
+         LDWA    0x0000,i       ;clear accumulator
          LDBA    charIn,d       ;prep for first run by populating num3
          SUBA    0x30,i         ;convert to deci
          STWA    num3,d
@@ -124,11 +124,11 @@ andChk:  CPWA    'A',i       ;Check for the AND characters in series
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'N',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'D',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
          LDWA    '&',i       
@@ -141,11 +141,11 @@ xorChk:  LDWA    num1,d      ;Check for the XOR characters in series
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'O',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'R',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
          LDWA    '^',i       
@@ -158,7 +158,7 @@ orChk:   LDWA    num1,d      ;Check for the OR characters in series
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'R',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '\|',i      
@@ -171,7 +171,7 @@ lShftChk:LDWA    num1,d      ;Check for the << characters in series
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '<',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '<',i       
@@ -180,11 +180,11 @@ lShftChk:LDWA    num1,d      ;Check for the << characters in series
 rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    rLog        
+         BRNE    badOp       ;ERROR, incomplete/invalid operator 
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    end         ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
@@ -208,7 +208,7 @@ negT:    LDWA    1,i         ;set next integer to be negative
          BR      loop
 
 badOp:   STRO    errMsg,d    ;output a message explaining the error
-         LDWA    num1,d
+         LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
          BR      end        
