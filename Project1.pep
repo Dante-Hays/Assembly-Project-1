@@ -429,36 +429,14 @@ forM:    LDWA    k,s         ;load k for comparison if not loaded already, to se
          BR      forM        ;do the loop again!
 ;The end function which prints the equation
 ;  and returns the result
-endForM: LDBA    '\n',i      ;print out newline
-         STBA    charOut,d   ;print out newline
-         LDBA    m1Sign,s    ;TODO comments
-         CPBA    1,i         ;
-         BRNE    endForM2    ;
-         LDBA    '-',i       ;
-         STBA    charOut,d   ;
-endForM2:DECO    mult1,s     ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    '*',i       ;
-         STBA    charOut,d   ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    m2Sign,s    ;
-         CPBA    1,i         ;
-         BRNE    endForM3    ;
-         LDBA    '-',i       ;
-         STBA    charOut,d   ;
-endForM3:DECO    mult2,s     ;
-         LDBA    '\n',i      ;
-         STBA    charOut,d   ;
-         LDBA    m1Sign,s    ;
+endForM: LDBA    m1Sign,s    ;
          CPBA    m2Sign,s    ;
-         BREQ    endForM4    ;
+         BREQ    endForM2    ;
          LDWA    result,s    ;
          NOTA                ;
          ADDA    1,i         ;
          STWA    result,s    ;
-endForM4:LDWA    result,s    ;
+endForM2:LDWA    result,s    ;
          STWA    retVal,s    ;
          LDWA    0,i         ;cleanup
          STWA    k,s
@@ -547,29 +525,7 @@ divZero: LDWA    -1,i        ;TODO comments
          STWA    dresult,s   ;
 ;The end function that prints out the equation
 ;  and stores the result
-endForD: LDBA    '\n',i      ;TODO comments
-         STBA    charOut,d   ;
-         LDBA    div1Sign,s  ;
-         CPBA    1,i         ;
-         BRNE    endForD2    ;
-         LDBA    '-',i       ;
-         STBA    charOut,d   ;
-endForD2:DECO    div1,s      ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    '/',i       ;
-         STBA    charOut,d   ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    div2Sign,s  ;
-         CPBA    1,i         ;
-         BRNE    endForD3    ;
-         LDBA    '-',i       ;
-         STBA    charOut,d   ;
-endForD3:DECO    div2,s      ;
-         LDBA    '\n',i      ;
-         STBA    charOut,d   ;
-         LDBA    div1Sign,s  ;
+endForD: LDBA    div1Sign,s  ;
          CPBA    div2Sign,s  ;
          BREQ    endForD4    ;
          LDWA    dresult,s   ;
@@ -599,19 +555,7 @@ add:     LDWA    add1,s
          ADDA    add2,s      
          STWA    retAdd,s    
          BR      endForA     
-endForA: LDBA    '\n',i      ;printf("\n")
-         STBA    charOut,d   
-         DECO    add1,s      
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d   
-         LDBA    '+',i       ;printf(" ")
-         STBA    charOut,d   
-         LDBA    ' ',i       ;printf(" ")
-         STBA    charOut,d   
-         DECO    add2,s      
-         LDBA    '\n',i      
-         STBA    charOut,d   
-         RET                 
+endForA: RET                 
 
 retSub:  .EQUATE 6           ;returned value #2d
 sub1:    .EQUATE 4           ;formal parameter #2d
@@ -622,19 +566,7 @@ sub:     LDWA    sub1,s      ;load first value to accumulator
          SUBA    sub2,s      ;subtract the second
          STWA    retSub,s    ;store result in retSub
          BR      endForS     ;move to the end!
-endForS: LDBA    '\n',i      ;TODO comments
-         STBA    charOut,d   ;
-         DECO    sub1,s      ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    '-',i       ;
-         STBA    charOut,d   ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         DECO    sub2,s      ;
-         LDBA    '\n',i      ;
-         STBA    charOut,d   ;
-         RET                 ;
+endForS: RET                 ;
 
 ;********* XOR ********** TODO fix comments
 retXor:  .EQUATE 10          ;returned value #2d 
@@ -654,18 +586,9 @@ xor:     SUBSP   4,i         ;push #tempx1 #tempx2
          SUBA    tempx1,s
          STWA    retXor,s    ;store result in retSub\
          BR      endForX     ;move to the end!
-endForX: LDBA    '\n',i      ;TODO comments
-         STBA    charOut,d   ;
-         DECO    xor1,s      ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         LDBA    'X',i       ;
-         STBA    charOut,d   ;
-         LDBA    ' ',i       ;
-         STBA    charOut,d   ;
-         DECO    xor2,s      ;
-         LDBA    '\n',i      ;
-         STBA    charOut,d   ;
+endForX: LDWA    0,i
+         STWA    tempx1,s
+         STWA    tempx2,s
          ADDSP   4,i         ;pop #tempx1 #tempx2
          RET                 ;
          
