@@ -28,7 +28,7 @@ isDeci:  .BYTE   0           ;stores if the given value stored to array is a dec
 
 ;LOCAL VARIABLES
 
-expNum:  .WORD   0           ;true or false for expecting next input to be number #2d
+expNum:  .WORD   1           ;true or false for expecting next input to be number #2d
 nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
 skipNum: .WORD   0           ;the number of times to skip checking the input #2d
 
@@ -37,54 +37,57 @@ num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the curren
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d 
 
+errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator: \x00"
+errMsg2: .ASCII  "bad operator input index: \x00"
+
 ;MAIN
 
-main:    LDBA charIn,d       ;prep for first run by populating num2
-         SUBA 0x30,i         ;convert to deci
-         STWA num2,d
-         LDBA charIn,d       ;prep for first run by populating num3
-         SUBA 0x30,i         ;convert to deci
-         STWA num3,d
-loop:    LDWA num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
-         STWA num1,d
-         LDWA num3,d
-         STWA num2,d
-         LDWA 0x0000,i       ;clear accumulator
-         LDBA charIn,d
-         SUBA 0x30,i         ;convert to deci
-         STWA num3,d
+main:    LDBA    charIn,d       ;prep for first run by populating num2
+         SUBA    0x30,i         ;convert to deci
+         STWA    num2,d
+         LDBA    charIn,d       ;prep for first run by populating num3
+         SUBA    0x30,i         ;convert to deci
+         STWA    num3,d
+loop:    LDWA    num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
+         STWA    num1,d
+         LDWA    num3,d
+         STWA    num2,d
+         LDWA    0x0000,i       ;clear accumulator
+         LDBA    charIn,d
+         SUBA    0x30,i         ;convert to deci
+         STWA    num3,d
 
          ;the skip check code is used to skip over unwanted/extra input characters
          ;for example, after reading in AND, reading the ND in the next loop should be avoided   
-         LDWA skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
-         CPWA 0,i
-         BREQ goOn
-         SUBA 1,i            ;decrement skipNum by 1
-         STWA skipNum,d
-         BR loop             ;go back to start of loop without checking current input char
+         LDWA    skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
+         CPWA    0,i
+         BREQ    goOn
+         SUBA    1,i            ;decrement skipNum by 1
+         STWA    skipNum,d
+         BR      loop             ;go back to start of loop without checking current input char
          
-goOn:    LDWA num1,d         ;if num1 is not deci, store as char, else add it to value
-         CPWA 9,i            ;check for int by checking for range 0
-         BRGT notDec
-         CPWA 0,i
-         BRLT notDec
-         ADDA value,d
-         STWA value,d
-         LDWA num2,d         ;if num2 is not deci, store current value, else multiply value by 10
-         CPWA 9,i
-         BRGT decDone
-         CPWA 0,i
-         BRLT decDone
-         LDWA 10,i           ;Call the multiplication function to multiply 'value' by 10
-         STWA -4,s         
-         LDWA value,d
-         STWA -6,s
-         SUBSP 6,i           ;push #retVal #mult1 #mult2 
-         CALL  multiply    
-         LDWA 4,s
-         STWA value,d
-         ADDSP 6,i           ;pop #mult2 #mult1 #retVal 
-         BR loop             ;loop back to get next digit
+goOn:    LDWA    num1,d         ;if num1 is not deci, store as char, else add it to value
+         CPWA    9,i            ;check for int by checking for range 0
+         BRGT    notDec
+         CPWA    0,i
+         BRLT    notDec
+         ADDA    value,d
+         STWA    value,d
+         LDWA    num2,d         ;if num2 is not deci, store current value, else multiply value by 10
+         CPWA    9,i
+         BRGT    decDone
+         CPWA    0,i
+         BRLT    decDone
+         LDWA    10,i           ;Call the multiplication function to multiply 'value' by 10
+         STWA    -4,s         
+         LDWA    value,d
+         STWA    -6,s
+         SUBSP   6,i           ;push #retVal #mult1 #mult2 
+         CALL    multiply    
+         LDWA    4,s
+         STWA    value,d
+         ADDSP   6,i           ;pop #mult2 #mult1 #retVal 
+         BR      loop             ;loop back to get next digit
 
 ;Check for character(s) type and convert to a singular operand for array storage.
 
@@ -96,8 +99,8 @@ notDec:  LDBA    1,i         ;set is char to true
          
          CPWA    0x000A,i    ;check if input is finished by looking for LB, if so, move to postFix
          BREQ    addOps
-         CPWA 0x0020,i       ;check for white space and skip over if found
-         BREQ loop
+         CPWA    0x0020,i    ;check for white space and skip over if found
+         BREQ    loop
 
          CPWA    '-',i       ;go to negChk to determine if the - is a minus sign or a negative sign
          BREQ    negChk      
@@ -202,7 +205,13 @@ negChk:  LDWA    expNum,d    ;if expecting an int, set next integer to be negati
          BR      prc5        ;assign precedence for operator and store
 negT:    LDWA    1,i         ;set next integer to be negative
          STWA    nextNeg,d   
-         BR      loop        
+         BR      loop
+
+badOp:   STRO    errMsg,d    ;output a message explaining the error
+         LDWA    num1,d
+         ADDA    0x30,i
+         STBA    charOut,d
+         BR      end        
          
 ;add current accumulator word to the array
 
@@ -236,7 +245,7 @@ decDone: LDBA    1,i         ;set is deci to true
          NEGA
          STWA value,d 
          
-         pos:     LDWA value,d
+pos:     LDWA value,d
          LDWX vecI,d         ;load inVec index
          STWA inVec,x        ;store in array
          LDWA vecI,d         ;increment index & length
