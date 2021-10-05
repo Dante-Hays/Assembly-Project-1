@@ -37,8 +37,8 @@ num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to lo
 operand: .WORD   0           ;variable for storing operand
 opTemp:  .WORD   0           ;temp var for storing operand while swapping
 
-errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "SYNTAX ERROR: Expected Integer At: \x00"
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
 
 ;MAIN
 
