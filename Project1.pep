@@ -617,15 +617,6 @@ xorfunc: CALL    xor
          STWA    stackin,s   
          BR      ifLoops     
 
-outputz: STRO    teststr,d   
-         BR      end         
-
-;*****OPERATOR FUNCTIONS******
-;Operator functions can handle any shorts (-65535 to 65535)
-;But cannot handle calculations above/below that
-;*****************************
-
-
 ;*****OPERATOR FUNCTIONS******
 ;Operator functions can handle any shorts (-65535 to 65535)
 ;But cannot handle calculations above/below that
