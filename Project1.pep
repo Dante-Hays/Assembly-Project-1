@@ -560,6 +560,8 @@ endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
 output:  LDWA    stackin,s   ;output result
          STRO    outputs,d   
          DECO    stackin,s   
+         LDWA    0,i
+         STWA    stackin,s
          BR      askPr       ;loop back to prompt to accept next expression or quit
 
 
@@ -573,9 +575,13 @@ resTemp: .BLOCK  2           ;Temporary storage for result intake #2d
 
 addfunc: LDWA    stackin,s   ;pop
          STWA    RHop,d      ;Saves right hand operator #2d
+         LDWA    0,i
+         STWA    0,s
          ADDSP   2,i         ;pop #stackin
          LDWA    stackin,s   ;pop next item off stack #stackin
          STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         LDWA    0,i
+         STWA    0,s
          ADDSP   2,i         ;pop #stackin
          LDWA    LHop,d      ;load first value to accumulator
          ADDA    RHop,d      ;add second value to it
