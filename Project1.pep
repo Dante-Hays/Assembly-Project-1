@@ -883,9 +883,8 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
          RET                  
+
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
-
-teststr: .ASCII  "You entered a * or / in your input. This is test string \x00"
 
 end:     .END  
