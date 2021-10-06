@@ -3,9 +3,11 @@
 ;          Drew Dorris
 ;          Dante Hays
 ;          Matthew Lockard
-; Lab:     Project
+; Lab:     Project #1
 ; Date:    9/26/2021
-; Purpose:
+; Purpose: To take in user Infix calculations
+;          and convert to solved postfix expression
+;
 ;********************************************************************
 
 ;*****************************
@@ -21,6 +23,14 @@ vecI:    .WORD   0           ;store current index of inVec array when register i
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
 ;*****************************
+;DISPLAY
+;*****************************
+;MAIN
+main:    STRO    menu,d      ;display the starting menu
+askPr:   STRO    prompt,d    ;display the user prompt
+         BR      start
+
+;*****************************
 ;INPUT TO ARRAY
 ;*****************************
 
@@ -29,71 +39,116 @@ inVecL:  .WORD   1           ;length of inVec, global variable #2d
 expNum:  .WORD   1           ;true or false for expecting next input to be number #2d
 nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
 skipNum: .WORD   0           ;the number of times to skip checking the input #2d
+stopFlg: .WORD   0           ;boolean for stoping char intake #2d
 
 value:   .WORD   0           ;temporary storage for integer intake #2d
 num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d
-operand: .WORD   0           ;variable for storing operand
-opTemp:  .WORD   0           ;temp var for storing operand while swapping
+operand: .WORD   0           ;variable for storing operand #2c
+opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
 
-errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
 
-;MAIN
 
-main:    LDBA    charIn,d       ;prep for first run by populating num2
-         SUBA    0x30,i         ;convert to deci
+
+start:   LDWA    0,i         ;clear the array if needed
+         LDWX    inVecL,d    ;starting at the highest index, zero all values
+         STWA    inVec,x
+         SUBX    1,i
+         STWX    inVecL,d
+         CPWX    0,i
+         BRGT    start
+
+         LDWX    63,i 
+opClr:   STWA    opArray,x
+         STWA    prcArray,x
+         SUBX    1,i
+         CPWX    0,i
+         BRGT    opClr
+         
+         STWA    vecI,d 
+         STWA    stopFlg,d
+         STWA    value,d
+         STWA    num1,d
          STWA    num2,d
-         LDWA    0x0000,i       ;clear accumulator
-         LDBA    charIn,d       ;prep for first run by populating num3
-         SUBA    0x30,i         ;convert to deci
          STWA    num3,d
-loop:    LDWA    num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
+         STWA    opIndex,d 
+         STWA    operand,d
+         STWA    opTemp,d 
+         STWA    swapTrue,d
+         STWA    addTrue,d
+         STWA    newPrc,d
+         STWA    prevPrc,d
+         
+         LDWA     2,i
+         STWA     prcIndex,d
+         
+         LDBA    charIn,d    ;prep for first run by populating num2
+
+         CPWA    0x0051,i    ;check if the user wants to quit by looking for Q, if so, goto goodbye
+         BREQ    goodbye 
+
+         SUBA    0x30,i      ;convert to deci
+         STWA    num2,d
+         LDWA    0x0000,i    ;clear accumulator
+         LDBA    charIn,d    ;prep for first run by populating num3
+         SUBA    0x30,i      ;convert to deci
+         STWA    num3,d
+loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
          STWA    num1,d
          LDWA    num3,d
          STWA    num2,d
-         LDWA    0x0000,i       ;clear accumulator
-         LDBA    charIn,d
-         SUBA    0x30,i         ;convert to deci
+         LDWA    0x0000,i    ;clear accumulator
+         LDWA    stopFlg,d   ;check if input should be taken in
+         CPWA    1,i
+         BREQ    skipChk
+input:   LDBA    charIn,d         
+         SUBA    0x30,i      ;convert to deci
          STWA    num3,d
+
+         ADDA    0x30,i      ;Check if line break was found, if so, stop accepting new input
+         CPWA    0x0A,i
+         BRNE    skipChk
+         LDWA    1,i
+         STWA    stopFlg,d
+         
 
          ;the skip check code is used to skip over unwanted/extra input characters
          ;for example, after reading in AND, reading the ND in the next loop should be avoided   
-         LDWA    skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
+skipChk: LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
          CPWA    0,i
          BREQ    goOn
-         SUBA    1,i            ;decrement skipNum by 1
+         SUBA    1,i         ;decrement skipNum by 1
          STWA    skipNum,d
-         BR      loop             ;go back to start of loop without checking current input char
+         BR      loop        ;go back to start of loop without checking current input char
          
-goOn:    LDWA    num1,d         ;if num1 is not deci, store as char, else add it to value
-         CPWA    9,i            ;check for int by checking for range 0
+goOn:    LDWA    num1,d      ;if num1 is not deci, store as char, else add it to value
+         CPWA    9,i         ;check for int by checking for range 0
          BRGT    notDec
          CPWA    0,i
          BRLT    notDec
          ADDA    value,d
          STWA    value,d
-         LDWA    num2,d         ;if num2 is not deci, store current value, else multiply value by 10
+         LDWA    num2,d      ;if num2 is not deci, store current value, else multiply value by 10
          CPWA    9,i
          BRGT    decDone
          CPWA    0,i
          BRLT    decDone
-         LDWA    10,i           ;Call the multiplication function to multiply 'value' by 10
+         LDWA    10,i        ;Call the multiplication function to multiply 'value' by 10
          STWA    -4,s         
          LDWA    value,d
          STWA    -6,s
-         SUBSP   6,i           ;push #retVal #mult1 #mult2 
+         SUBSP   6,i         ;push #retVal #mult1 #mult2 
          CALL    multiply    
          LDWA    4,s
          STWA    value,d
-         ADDSP   6,i           ;pop #mult2 #mult1 #retVal 
-         BR      loop             ;loop back to get next digit
+         ADDSP   6,i         ;pop #mult2 #mult1 #retVal 
+         BR      loop        ;loop back to get next digit
 
 ;Check for character(s) type and convert to a singular operand for array storage.
 notDec:  LDWA    num1,d      ;load current operator to A
          ADDA    0x0030,i    ;convert back to ascii char
-
+   
          CPWA    0x000A,i    ;check if input is finished by looking for LB, if so, move to postFix
          BREQ    addOps      
          CPWA    0x0020,i    ;check for white space and skip over if found
@@ -220,13 +275,13 @@ badOp:   STRO    errMsg,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      end
+         BR      askPr
 
 noNum:   STRO    errMsg2,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      end           
+         BR      askPr           
 
 ;set operand and its precedence
 setAdd:  STWA    operand,d   ;store operand and set precedence
@@ -310,9 +365,9 @@ pos:     DECO    value,d     ;print the decimal value to the output
 ;it is read in in order to store it to proper postfix notation
 
 ;LOCAL VARIABLES
-opArray: .BLOCK  32          ;array of operators to be stored into final array
+opArray: .BLOCK  64          ;array of operators to be stored into final array
 opIndex: .WORD   0           ;stores index of operators in op array
-prcArray:.BLOCK  32          ;array of operator precedence
+prcArray:.BLOCK  64          ;array of operator precedence
 prcIndex:.WORD   2           ;stores indec of operator precedence in prc array
 swapTrue:.BYTE   0           ;stores if a swap has occured
 addTrue: .BYTE   0           ;stores if add has been called
@@ -462,12 +517,17 @@ ifLoops: LDWX    vecI,d      ;load inVec index
          ASRA                
          STWA    inVecL,d    ;update new index length
 ;If value == decimal, add to stack
+
+         LDWA    inVecL,d    ;skips first two inputs to be compared with opperators
+         CPWA    2,i         ;
+         BRLT    pushit      ;To skip the compare to operator functions   
+
          LDWA    value,d     ;Checking to see if array value is opperand
          CPWA    '+',i       
          BREQ    addfunc     ;If operator then branch to addfunc
          CPWA    '-',i       
          BREQ    subfunc     ;If operator then branch to subfunc
-;ADD MULT
+
          CPWA    '*',i       
          BREQ    multfunc    ;If operator then branch to multfunc
 
@@ -475,18 +535,18 @@ ifLoops: LDWX    vecI,d      ;load inVec index
          BREQ    divfunc     ;if operator then branch to div func
 
          CPWA    '%',i
-         BREQ    modfunc
+         BREQ    modfunc     ;if operator then branch to modfunc
 
          CPWA    '&',i
-         BREQ    andfunc
+         BREQ    andfunc     ;if operator then branch to andfunc
 
-         CPWA    '\|',i
+         CPWA    '\|',i      ;if operator then branch to orfunc
          BREQ    orfunc
 
-         CPWA    '^',i
+         CPWA    '^',i       ;if operator then branch to xorfunc
          BREQ    xorfunc
 
-         LDWA    value,d     
+pushit:  LDWA    value,d     
          STWA    stackin,d   
          SUBSP   2,i         ;push #stackin onto stack
          STWA    stackin,s   
@@ -495,12 +555,13 @@ ifLoops: LDWX    vecI,d      ;load inVec index
 
 endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
          CPWA    vecI,d      
-         BRLT    output      ;I dont think we need this here, but i left for now ************************************
-         BR      ifLoops     
+         BRLT    output      ;Loads up finals answer, and outputs = 
+         BR      ifLoops     ;returns to the loop
 
-output:  LDWA    stackin,s   
-         STRO    outputs,d   
-         DECO    stackin,s   
+output:  LDWA    stackin,s   ;loads up final answer in the stack to A
+         STRO    outputs,d   ;outputs =  
+         DECO    stackin,s   ;outputs decimal in stack
+         BR      askPr
 
 ;**************************************
 ;*********PostFix Calculations*********
@@ -510,11 +571,6 @@ RHop:    .BLOCK  2           ;Temperary storage for int intake #2d
 LHop:    .BLOCK  2           ;Temperary Storage for int intake #2d
 retAdd:  .EQUATE 0           ;returned value #2d
 retSub:  .EQUATE 0           ;returned value #2d
-
-
-;;TODO Finish adding multiplication and Division
-;;mulfunc: Call    mul         ;Multiplication Method
-;;divfunc: Call    div         ;Division Method
 
 
 addfunc: LDWA    stackin,s   ;pop
@@ -586,15 +642,6 @@ xorfunc: CALL    xor
          ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
          STWA    stackin,s   
          BR      ifLoops     
-
-outputz: STRO    teststr,d   
-         BR      end         
-
-;*****OPERATOR FUNCTIONS******
-;Operator functions can handle any shorts (-65535 to 65535)
-;But cannot handle calculations above/below that
-;*****************************
-
 
 ;*****OPERATOR FUNCTIONS******
 ;Operator functions can handle any shorts (-65535 to 65535)
@@ -882,10 +929,25 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          BRGT    alsLoop     
          LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
-         RET                  
-outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
+         RET   
 
+         BR      askPr  
 
-teststr: .ASCII  "You entered a * or / in your input. This is test string \x00"
+goodbye: STRO    byeMsg,d    ;say goodbye and end
+         BR      end
 
-end:     .END  
+;*****************************
+;STRINGS
+;*****************************
+menu:    .ASCII  "CDDM Postfix Calculator\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
+
+prompt:  .ASCII  "\n-------------------------------\nPlease enter an expression:\n\x00"
+
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
+         
+outputs: .ASCII  "= \x00"    
+
+byeMsg:  .ASCII  "Goodbye! Shutting Down..."
+
+end:     .END                 
