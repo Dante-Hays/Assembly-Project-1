@@ -497,6 +497,7 @@ addOps:  LDBA    1,i         ;set add to true
          STWA    operand,d   ;store the operand
          BR      arayStor    ;store the value to the output array
 
+
 ;*****************************
 ;*****PostFix Calculations****
 ;*****************************
@@ -561,6 +562,7 @@ output:  LDWA    stackin,s   ;output result
          DECO    stackin,s   
          BR      askPr       ;loop back to prompt to accept next expression or quit
 
+
 ;**************************************
 ;*********PostFix Calculations*********
 ;Operand Decisions and stack management
@@ -568,12 +570,6 @@ output:  LDWA    stackin,s   ;output result
 RHop:    .BLOCK  2           ;Temporary storage for int intake #2d
 LHop:    .BLOCK  2           ;Temporary storage for int intake #2d
 resTemp: .BLOCK  2           ;Temporary storage for result intake #2d
-
-
-;;TODO Finish adding multiplication and Division
-;;mulfunc: Call    mul         ;Multiplication Method
-;;divfunc: Call    div         ;Division Method
-
 
 addfunc: LDWA    stackin,s   ;pop
          STWA    RHop,d      ;Saves right hand operator #2d
@@ -612,7 +608,12 @@ multfunc:LDWA    stackin,s   ;pop
          SUBSP   6,i         ;push #retVal #mult1 #mult2
          CALL    multiply
          LDWA    4,s
+         STWA    resTemp,d
+         LDWA    0,i
+         STWA    2,s
+         STWA    4,s
          ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
+         LDWA    resTemp,d
          STWA    stackin,s   
          BR      ifLoops      
 
@@ -647,7 +648,6 @@ modfunc: LDWA    stackin,s   ;pop
          SUBSP   8,i         ;push #remaind #retVal #div1 #div2
          CALL    divide
          LDWA    6,s
-         STWA    retSub,d    ;store in the result
          ADDSP   8,i         ;pop #remaind #retVal #div1 #div2 ; leave the calculation on the stack for next loop
          SUBSP   2,i         ;make room for calculation on stack #stackin
          STWA    stackin,s   
