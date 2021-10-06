@@ -37,62 +37,58 @@ num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to lo
 operand: .WORD   0           ;variable for storing operand
 opTemp:  .WORD   0           ;temp var for storing operand while swapping
 
-errMsg:  .ASCII  "SYNTAX ERROR: Unexpected Operator At: \x00"
-
-
-errMsg2: .ASCII  "SYNTAX ERROR: Expected Integer At: \x00"
-
-
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
 
 ;MAIN
 
-main:    LDBA    charIn,d    ;prep for first run by populating num2
-         SUBA    0x0030,i    ;convert to deci
-         STWA    num2,d      
-         LDWA    0x0000,i    ;clear accumulator
-         LDBA    charIn,d    ;prep for first run by populating num3
-         SUBA    0x0030,i    ;convert to deci
-         STWA    num3,d      
-loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
-         STWA    num1,d      
-         LDWA    num3,d      
-         STWA    num2,d      
-         LDWA    0x0000,i    ;clear accumulator
-         LDBA    charIn,d    
-         SUBA    0x0030,i    ;convert to deci
-         STWA    num3,d      
+main:    LDBA    charIn,d       ;prep for first run by populating num2
+         SUBA    0x30,i         ;convert to deci
+         STWA    num2,d
+         LDWA    0x0000,i       ;clear accumulator
+         LDBA    charIn,d       ;prep for first run by populating num3
+         SUBA    0x30,i         ;convert to deci
+         STWA    num3,d
+loop:    LDWA    num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
+         STWA    num1,d
+         LDWA    num3,d
+         STWA    num2,d
+         LDWA    0x0000,i       ;clear accumulator
+         LDBA    charIn,d
+         SUBA    0x30,i         ;convert to deci
+         STWA    num3,d
 
-;the skip check code is used to skip over unwanted/extra input characters
-;for example, after reading in AND, reading the ND in the next loop should be avoided
-         LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
-         CPWA    0,i         
-         BREQ    goOn        
-         SUBA    1,i         ;decrement skipNum by 1
-         STWA    skipNum,d   
-         BR      loop        ;go back to start of loop without checking current input char
-
-goOn:    LDWA    num1,d      ;if num1 is not deci, store as char, else add it to value
-         CPWA    9,i         ;check for int by checking for range 0
-         BRGT    notDec      
-         CPWA    0,i         
-         BRLT    notDec      
-         ADDA    value,d     
-         STWA    value,d     
-         LDWA    num2,d      ;if num2 is not deci, store current value, else multiply value by 10
-         CPWA    9,i         
-         BRGT    decDone     
-         CPWA    0,i         
-         BRLT    decDone     
-         LDWA    10,i        ;Call the multiplication function to multiply 'value' by 10
-         STWA    -4,s        
-         LDWA    value,d     
-         STWA    -6,s        
-         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         ;the skip check code is used to skip over unwanted/extra input characters
+         ;for example, after reading in AND, reading the ND in the next loop should be avoided   
+         LDWA    skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
+         CPWA    0,i
+         BREQ    goOn
+         SUBA    1,i            ;decrement skipNum by 1
+         STWA    skipNum,d
+         BR      loop             ;go back to start of loop without checking current input char
+         
+goOn:    LDWA    num1,d         ;if num1 is not deci, store as char, else add it to value
+         CPWA    9,i            ;check for int by checking for range 0
+         BRGT    notDec
+         CPWA    0,i
+         BRLT    notDec
+         ADDA    value,d
+         STWA    value,d
+         LDWA    num2,d         ;if num2 is not deci, store current value, else multiply value by 10
+         CPWA    9,i
+         BRGT    decDone
+         CPWA    0,i
+         BRLT    decDone
+         LDWA    10,i           ;Call the multiplication function to multiply 'value' by 10
+         STWA    -4,s         
+         LDWA    value,d
+         STWA    -6,s
+         SUBSP   6,i           ;push #retVal #mult1 #mult2 
          CALL    multiply    
-         LDWA    4,s         
-         STWA    value,d     
-         ADDSP   6,i         ;pop #mult2 #mult1 #retVal
-         BR      loop        ;loop back to get next digit
+         LDWA    4,s
+         STWA    value,d
+         ADDSP   6,i           ;pop #mult2 #mult1 #retVal 
+         BR      loop             ;loop back to get next digit
 
 ;Check for character(s) type and convert to a singular operand for array storage.
 notDec:  LDWA    num1,d      ;load current operator to A
@@ -103,14 +99,14 @@ notDec:  LDWA    num1,d      ;load current operator to A
          CPWA    0x0020,i    ;check for white space and skip over if found
          BREQ    loop        
          CPWA    '-',i       ;go to negChk to determine if the - is a minus sign or a negative sign
-         BREQ    negChk      
+         BREQ    negChk 
 
          LDWA    expNum,d    ;error out if expecting number
-         CPWA    1,i         
-         BREQ    noNum       
-
-         LDWA    num1,d      
-         ADDA    0x0030,i    
+         CPWA    1,i
+         BREQ    noNum
+         
+         LDWA    num1,d
+         ADDA    0x30,i
          CPWA    '+',i       ;If the current character matches a simple op. assign precedence and store accordingly
          BREQ    setAdd      
          CPWA    '*',i       
@@ -127,7 +123,7 @@ notDec:  LDWA    num1,d      ;load current operator to A
          BREQ    setXor      
 
 andChk:  CPWA    'A',i       ;Check for the AND characters in series
-         BRNE    xorChk      
+         BRNE    xorChk       
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'N',i       
@@ -191,11 +187,11 @@ lShftChk:LDWA    num1,d      ;Check for the << characters in series
 rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    badOp       ;ERROR, incomplete/invalid operator
+         BRNE    badOp       ;ERROR, incomplete/invalid operator 
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    rLog        
+         BRNE    rLog
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
@@ -218,19 +214,19 @@ negChk:  LDWA    expNum,d    ;if expecting an int, set next integer to be negati
          BR      setSub      ;assign precedence for operator and store
 negT:    LDWA    1,i         ;set next integer to be negative
          STWA    nextNeg,d   
-         BR      loop        
+         BR      loop
 
 badOp:   STRO    errMsg,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
-         ADDA    0x0030,i    
-         STBA    charOut,d   
-         BR      end         
+         ADDA    0x30,i
+         STBA    charOut,d
+         BR      end
 
-noNum:   STRO    errMsg2,d   ;output a message explaining the error
+noNum:   STRO    errMsg2,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
-         ADDA    0x0030,i    
-         STBA    charOut,d   
-         BR      end         
+         ADDA    0x30,i
+         STBA    charOut,d
+         BR      end           
 
 ;set operand and its precedence
 setAdd:  STWA    operand,d   ;store operand and set precedence
@@ -827,28 +823,69 @@ or:      LDWA    or1,s       ;load first param to A
 ;********* ARITHMETIC RIGHT SHIFT ***********
 retArs:  .WORD   0           ;returned value from bitwise arith right shift #2d
 ars1:    .WORD   0           ;formal parameter #2d
-ars2:    .WORD   0           ;formal parameter #2de
+ars2:    .WORD   0           ;formal parameter #2d
+arsTemp: .WORD   0           ;temp for right shift loop
 
-ars:     RET                 
+ars:     LDWA    ars1,d      ;load first param to A
+
+arsLoop: LDWA    ars1,d      ;load the value in ars1
+         ASRA                ;aritmetic right shift
+         STWA    ars1,d      ;store to ars1
+         LDWA    ars2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    ars2,d      
+         CPWA    0,i         
+         BRGT    arsLoop     
+         LDWA    ars1,d      ;load the value in ars1
+         STWA    retArs,d    ;store result in retArs
+         RET                 
 
 ;********* LOGICAL RIGHT SHIFT ***********
 retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
 lrs1:    .WORD   0           ;formal parameter #2d
-lrs2:    .WORD   0           ;formal parameter #2de
+lrs2:    .WORD   0           ;formal parameter #2d
+lrsTemp: .WORD   0           ;temp for logical right loop
 
-lrs:     RET                 
+lrs:     LDWA    lrs1,d      ;load first param to A
+         CPWA    0,i         ;see if it is negative
+         BRGT    isPos       ;if not branch to perform the shift normally
+         NEGA                ;else negate it to positive
+isPos:   STWA    lrs1,d      ;store to lrs1
+
+lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
+         ASRA                ;aritmetic right shift
+         STWA    lrs1,d      ;store to lrs1
+         LDWA    lrs2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    lrs2,d      
+         CPWA    0,i         
+         BRGT    lrsLoop     
+         LDWA    lrs1,d      ;load the value in the lrs1
+         STWA    retLrs,d    ;store result in retLrs
+         RET                 
 
 ;********* LEFT SHIFT ***********
-retLefts:.WORD   0           ;returned value from bitwise left shift #2d
-lefts1:  .WORD   0           ;formal parameter #2d
-lefts2:  .WORD   0           ;formal parameter #2de
+retAls:  .WORD   0           ;returned value from bitwise left shift #2d
+als1:    .WORD   0           ;formal parameter #2d
+als2:    .WORD   0           ;formal parameter #2d
+alsTemp: .WORD   0           ;temp for left shift loop
 
-lefts:   RET                 
+als:     LDWA    als1,d      ;load first param to A
 
-         STOP                
+alsLoop: LDWA    als1,d      ;load the value in als1
+         ASLA                ;aritmetic left shift with second param
+         STWA    als1,d      ;store to als1
+         LDWA    als2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    als2,d      
+         CPWA    0,i         
+         BRGT    alsLoop     
+         LDWA    als1,d      ;load the value in als1
+         STWA    retAls,d    ;store result in retAls
+         RET                  
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
 
 teststr: .ASCII  "You entered a * or / in your input. This is test string \x00"
 
-end:     .END                  
+end:     .END  
