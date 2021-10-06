@@ -6,3 +6,5 @@ This calculator is capable of processing:
 - multiplication/division/modulo
 - AND, OR, XOR
 - and bit shifts
+
+NOTE: This program uses Terminal I/O in PEP9 rather than the Batch I/O
