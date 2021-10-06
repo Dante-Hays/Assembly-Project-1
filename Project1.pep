@@ -937,7 +937,7 @@ goodbye: STRO    byeMsg,d    ;say goodbye and end
 ;*****************************
 ;STRINGS
 ;*****************************
-menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
+menu:    .ASCII  "CDDM Postfix Calculator\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
 
 prompt:  .ASCII  "\n-------------------------------\nPlease enter an expression:\n\x00"
 
