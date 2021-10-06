@@ -21,6 +21,14 @@ vecI:    .WORD   0           ;store current index of inVec array when register i
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
 ;*****************************
+;DISPLAY
+;*****************************
+;MAIN
+main:    STRO    menu,d      ;display the starting menu
+askPr:   STRO    prompt,d    ;display the user prompt
+         BR      start
+
+;*****************************
 ;INPUT TO ARRAY
 ;*****************************
 
@@ -29,66 +37,88 @@ inVecL:  .WORD   1           ;length of inVec, global variable #2d
 expNum:  .WORD   1           ;true or false for expecting next input to be number #2d
 nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
 skipNum: .WORD   0           ;the number of times to skip checking the input #2d
+stopFlg: .WORD   0           ;boolean for stoping char intake #2d
 
 value:   .WORD   0           ;temporary storage for integer intake #2d
 num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d
-operand: .WORD   0           ;variable for storing operand
-opTemp:  .WORD   0           ;temp var for storing operand while swapping
+operand: .WORD   0           ;variable for storing operand #2c
+opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
 
-errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
 
-;MAIN
 
-main:    LDBA    charIn,d       ;prep for first run by populating num2
-         SUBA    0x30,i         ;convert to deci
+
+start:   LDWA    0,i         ;clear the array if needed
+         LDWX    inVecL,d    ;starting at the highest index, zero all values
+         STWA    inVec,x
+         SUBX    1,i
+         CPWX    0,i
+         BRGT    start
+         
+         STWA    stopFlg,d
+         STWA    value,d
+         STWA    num1,d
          STWA    num2,d
-         LDWA    0x0000,i       ;clear accumulator
-         LDBA    charIn,d       ;prep for first run by populating num3
-         SUBA    0x30,i         ;convert to deci
          STWA    num3,d
-loop:    LDWA    num2,d         ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
+
+         LDBA    charIn,d    ;prep for first run by populating num2
+         SUBA    0x30,i      ;convert to deci
+         STWA    num2,d
+         LDWA    0x0000,i    ;clear accumulator
+         LDBA    charIn,d    ;prep for first run by populating num3
+         SUBA    0x30,i      ;convert to deci
+         STWA    num3,d
+loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
          STWA    num1,d
          LDWA    num3,d
          STWA    num2,d
-         LDWA    0x0000,i       ;clear accumulator
-         LDBA    charIn,d
-         SUBA    0x30,i         ;convert to deci
+         LDWA    0x0000,i    ;clear accumulator
+         LDWA    stopFlg,d   ;check if input should be taken in
+         CPWA    1,i
+         BREQ    skipChk
+input:   LDBA    charIn,d         
+         SUBA    0x30,i      ;convert to deci
          STWA    num3,d
+
+         ADDA    0x30,i      ;Check if line break was found, if so, stop accepting new input
+         CPWA    0x0A,i
+         BRNE    skipChk
+         LDWA    1,i
+         STWA    stopFlg,d
+         
 
          ;the skip check code is used to skip over unwanted/extra input characters
          ;for example, after reading in AND, reading the ND in the next loop should be avoided   
-         LDWA    skipNum,d      ;if skipNum == 0, go on to analyze the input, else, skip analization
+skipChk: LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
          CPWA    0,i
          BREQ    goOn
-         SUBA    1,i            ;decrement skipNum by 1
+         SUBA    1,i         ;decrement skipNum by 1
          STWA    skipNum,d
-         BR      loop             ;go back to start of loop without checking current input char
+         BR      loop        ;go back to start of loop without checking current input char
          
-goOn:    LDWA    num1,d         ;if num1 is not deci, store as char, else add it to value
-         CPWA    9,i            ;check for int by checking for range 0
+goOn:    LDWA    num1,d      ;if num1 is not deci, store as char, else add it to value
+         CPWA    9,i         ;check for int by checking for range 0
          BRGT    notDec
          CPWA    0,i
          BRLT    notDec
          ADDA    value,d
          STWA    value,d
-         LDWA    num2,d         ;if num2 is not deci, store current value, else multiply value by 10
+         LDWA    num2,d      ;if num2 is not deci, store current value, else multiply value by 10
          CPWA    9,i
          BRGT    decDone
          CPWA    0,i
          BRLT    decDone
-         LDWA    10,i           ;Call the multiplication function to multiply 'value' by 10
+         LDWA    10,i        ;Call the multiplication function to multiply 'value' by 10
          STWA    -4,s         
          LDWA    value,d
          STWA    -6,s
-         SUBSP   6,i           ;push #retVal #mult1 #mult2 
+         SUBSP   6,i         ;push #retVal #mult1 #mult2 
          CALL    multiply    
          LDWA    4,s
          STWA    value,d
-         ADDSP   6,i           ;pop #mult2 #mult1 #retVal 
-         BR      loop             ;loop back to get next digit
+         ADDSP   6,i         ;pop #mult2 #mult1 #retVal 
+         BR      loop        ;loop back to get next digit
 
 ;Check for character(s) type and convert to a singular operand for array storage.
 notDec:  LDWA    num1,d      ;load current operator to A
@@ -748,6 +778,18 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
          RET                 
 
-         STOP                
+         STOP  
+
+;*****************************
+;STRINGS
+;*****************************
+menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\n\x00"
+
+prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
+
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
+
+              
 end:     .END               
          
