@@ -2,7 +2,7 @@
 ; Names:   Charles Kinser
 ;          Drew Dorris
 ;          Dante Hays
-;          ADD YOUR NAME
+;          Matthew Lockard
 ; Lab:     Project
 ; Date:    9/26/2021
 ; Purpose:
@@ -256,8 +256,8 @@ noNum:   STRO    errMsg2,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      end        
-         
+         BR      end           
+
 ;set operand and its precedence
 setAdd:  STWA    operand,d   ;store operand and set precedence
          BR      prc5        
@@ -460,14 +460,171 @@ addOps:  LDBA    1,i         ;set add to true
          STBA    addTrue,d   
          LDWX    opIndex,d   ;load the top operator index
          CPWX    0,i         ;if the array still has elements continue
-         BREQ    end         ;else branch to solve                 ******TODO BRANCH TO SOLVE, PRINTED POSTFIX ALREADY********
-                                                                  ;******HAS TRAILING WHITESPACE JUST ADD = AND SOLUTION******    
-                                                  
+         BREQ    postCalc    ;else branch to solve
+
+
          SUBX    2,i         ;move to the top operator
          STWX    opIndex,d   ;store the new index
          LDWA    opArray,x   ;load the op to A
          STWA    operand,d   ;store the operand
          BR      arayStor    ;store the value to the output array
+
+;*****************************
+;*****PostFix Calculations****
+;*****************************
+stopati: .BLOCK  2           ;Loop ends at end of array inVecL #2d
+stackin: .EQUATE 0           ;local variable #2d
+
+postCalc:LDWA    vecI,d      ;Resets vecI to parse through array
+         STWA    stopati,d   ;Saves index as new paramater for if statement #2d
+         LDWA    0,i         ;Resets index and length of array
+         STWA    vecI,d      
+         BR      ifLoops     
+
+ifLoops: LDWX    vecI,d      ;load inVec index
+         LDWA    inVec,x     ;load [vecI]array (index of)
+         STWA    value,d     
+         CPWA    0,i         
+         BREQ    output      ;Outputs answer
+         LDWA    vecI,d      ;increment index and length
+         ADDA    2,i         
+         STWA    vecI,d      ;update new index location
+         ASRA                
+         STWA    inVecL,d    ;update new index length
+;If value == decimal, add to stack
+         LDWA    value,d     ;Checking to see if array value is opperand
+         CPWA    '+',i       
+         BREQ    addfunc     ;If operator then branch to addfunc
+         CPWA    '-',i       
+         BREQ    subfunc     ;If operator then branch to subfunc
+;ADD MULT
+         CPWA    '*',i       
+         BREQ    multfunc    ;If operator then branch to multfunc
+
+         CPWA    '/',i       
+         BREQ    divfunc     ;if operator then branch to div func
+
+         CPWA    '%',i
+         BREQ    modfunc
+
+         CPWA    '&',i
+         BREQ    andfunc
+
+         CPWA    '\|',i
+         BREQ    orfunc
+
+         CPWA    '^',i
+         BREQ    xorfunc
+
+         LDWA    value,d     
+         STWA    stackin,d   
+         SUBSP   2,i         ;push #stackin onto stack
+         STWA    stackin,s   
+         LDWA    0,i         ;reset value
+         STWA    value,d     
+
+endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
+         CPWA    vecI,d      
+         BRLT    output      ;I dont think we need this here, but i left for now ************************************
+         BR      ifLoops     
+
+output:  LDWA    stackin,s   
+         STRO    outputs,d   
+         DECO    stackin,s   
+
+;**************************************
+;*********PostFix Calculations*********
+;Opperand Decisions and stack managment
+;**************************************
+RHop:    .BLOCK  2           ;Temperary storage for int intake #2d
+LHop:    .BLOCK  2           ;Temperary Storage for int intake #2d
+retAdd:  .EQUATE 0           ;returned value #2d
+retSub:  .EQUATE 0           ;returned value #2d
+
+
+;;TODO Finish adding multiplication and Division
+;;mulfunc: Call    mul         ;Multiplication Method
+;;divfunc: Call    div         ;Division Method
+
+
+addfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d      ;load first value to accumulator
+         ADDA    RHop,d      ;add second value to it
+         STWA    retAdd,d    ;store in the result
+         SUBSP   2,i         ;make room for calculation on stack #stackin
+         STWA    stackin,s   
+         BR      ifLoops     
+
+
+
+subfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d      ;load first value to accumulator
+         SUBA    RHop,d      ;add second value to it
+         STWA    retSub,d    ;store in the result
+         SUBSP   2,i         ;make room for calculation on stack #stackin
+         STWA    stackin,s   
+         BR      ifLoops     
+
+multfunc:CALL    multiply
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops      
+
+divfunc: CALL    divide
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops          
+
+modfunc: CALL    divide
+         LDWA    6,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
+
+andfunc: CALL    and
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops    
+
+orfunc:  CALL    or 
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops    
+
+xorfunc: CALL    xor 
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
+
+outputz: STRO    teststr,d   
+         BR      end         
+
+;*****OPERATOR FUNCTIONS******
+;Operator functions can handle any shorts (-65535 to 65535)
+;But cannot handle calculations above/below that
+;*****************************
+
 
 ;*****OPERATOR FUNCTIONS******
 ;Operator functions can handle any shorts (-65535 to 65535)
@@ -627,7 +784,7 @@ divZero: LDWA    -1,i        ;TODO comments
 ;  and stores the result
 endForD: LDBA    div1Sign,s  ;
          CPBA    div2Sign,s  ;
-         BREQ    endForD4    ;
+         BREQ    endForD2    ;
          LDWA    dresult,s   ;
          NOTA                ;
          ADDA    1,i         ;
@@ -636,7 +793,7 @@ endForD: LDBA    div1Sign,s  ;
          NOTA                ;
          ADDA    1,i         ;
          STWA    remaind,s   ;
-endForD4:LDWA    dresult,s   ;
+endForD2:LDWA    dresult,s   ;
          STWA    retDiv,s    ;
          LDWA    0,i         ;cleanup
          STWA    dk,s        
@@ -647,26 +804,6 @@ endForD4:LDWA    dresult,s   ;
          ADDSP   6,i         ;pop #dresult #dk #div2Sign #div1Sign
          RET                 ;
 
-;********* ADD **********
-retAdd:  .EQUATE 6           ;returned value #2d
-add1:    .EQUATE 4           ;formal parameter #2d
-add2:    .EQUATE 2           ;formal parameter #2d
-add:     LDWA    add1,s      
-         ADDA    add2,s      
-         STWA    retAdd,s    
-         BR      endForA     
-endForA: RET                 
-
-retSub:  .EQUATE 6           ;returned value #2d
-sub1:    .EQUATE 4           ;formal parameter #2d
-sub2:    .EQUATE 2           ;formal parameter #2d
-;Subtract function takes two input (sub1, sub2), subtracts sub2 from sub1,
-;  and returns result in retSub.
-sub:     LDWA    sub1,s      ;load first value to accumulator
-         SUBA    sub2,s      ;subtract the second
-         STWA    retSub,s    ;store result in retSub
-         BR      endForS     ;move to the end!
-endForS: RET                 ;
 
 ;********* XOR ********** TODO fix comments
 retXor:  .EQUATE 10          ;returned value #2d
@@ -694,24 +831,23 @@ endForX: LDWA    0,i
 
 ;********* AND **********
 ;does a bitwise and of two parameters
-retAnd:  .WORD   0           ;returned value from bitwise and #2d
-and1:    .WORD   0           ;formal parameter #2d
-and2:    .WORD   0           ;formal parameter #2d
-
-and:     LDWA    and1,d      ;load first param to A
-         ANDA    and2,d      ;bitwise and with second param
-         STWA    retAnd,d    ;store result in retAnd
+retAnd:  .EQUATE 6          ;returned value from bitwise #2d
+and1:    .EQUATE 4           ;formal parameter #2d
+and2:    .EQUATE 2           ;formal parameter #2d
+and:     LDWA    and1,s      ;load first param to A
+         ANDA    and2,s      ;bitwise and with second param
+         STWA    retAnd,s    ;store result in retAnd
          RET                 
 
 ;********* OR ***********
 ;does a bitwise or of two parameters
-retOr:   .WORD   0           ;returned value from bitwise or #2d
-or1:     .WORD   0           ;formal parameter #2d
-or2:     .WORD   0           ;formal parameter #2d
+retOr:   .EQUATE 6           ;returned value from bitwise #2d
+or1:     .EQUATE 4           ;formal parameter #2d
+or2:     .EQUATE 2           ;formal parameter #2d
 
-or:      LDWA    or1,d       ;load first param to A
-         ORA     or2,d       ;bitwise or with second param
-         STWA    retOr,d     ;store result in retOr
+or:      LDWA    or1,s       ;load first param to A
+         ORA     or2,s       ;bitwise or with second param
+         STWA    retOr,s     ;store result in retOr
          RET                 
 
 ;********* ARITHMETIC RIGHT SHIFT ***********
@@ -776,20 +912,4 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          BRGT    alsLoop     
          LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
-         RET                 
-
-         STOP  
-
-;*****************************
-;STRINGS
-;*****************************
-menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\n\x00"
-
-prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
-
-errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
-
-              
-end:     .END               
-         
+         RET                  
