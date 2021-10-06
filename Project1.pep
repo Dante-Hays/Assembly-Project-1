@@ -53,6 +53,7 @@ start:   LDWA    0,i         ;clear the array if needed
          LDWX    inVecL,d    ;starting at the highest index, zero all values
          STWA    inVec,x
          SUBX    1,i
+         STWX    inVecL,d
          CPWX    0,i
          BRGT    start
          
@@ -63,6 +64,10 @@ start:   LDWA    0,i         ;clear the array if needed
          STWA    num3,d
 
          LDBA    charIn,d    ;prep for first run by populating num2
+
+         CPWA    0x0051,i    ;check if the user wants to quit by looking for Q, if so, goto goodbye
+         BREQ    goodbye 
+
          SUBA    0x30,i      ;convert to deci
          STWA    num2,d
          LDWA    0x0000,i    ;clear accumulator
@@ -123,7 +128,7 @@ goOn:    LDWA    num1,d      ;if num1 is not deci, store as char, else add it to
 ;Check for character(s) type and convert to a singular operand for array storage.
 notDec:  LDWA    num1,d      ;load current operator to A
          ADDA    0x0030,i    ;convert back to ascii char
-
+   
          CPWA    0x000A,i    ;check if input is finished by looking for LB, if so, move to postFix
          BREQ    addOps      
          CPWA    0x0020,i    ;check for white space and skip over if found
@@ -250,13 +255,13 @@ badOp:   STRO    errMsg,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      end
+         BR      askPr
 
 noNum:   STRO    errMsg2,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      end           
+         BR      askPr           
 
 ;set operand and its precedence
 setAdd:  STWA    operand,d   ;store operand and set precedence
@@ -531,6 +536,7 @@ endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
 output:  LDWA    stackin,s   
          STRO    outputs,d   
          DECO    stackin,s   
+         BR      askPr
 
 ;**************************************
 ;*********PostFix Calculations*********
@@ -905,18 +911,23 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
          RET   
 
-         STOP  
+         BR      askPr  
+
+goodbye: STRO    byeMsg,d    ;say goodbye and end
+         BR      end
 
 ;*****************************
 ;STRINGS
 ;*****************************
-menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\n\x00"
+menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
 
-prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
+prompt:  .ASCII  "\n-------------------------------\nPlease enter an expression:\n\x00"
 
 errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
 errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
          
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
+
+byeMsg:  .ASCII  "Goodbye! Shutting Down..."
 
 end:     .END                 
