@@ -758,7 +758,7 @@ divZero: LDWA    -1,i        ;TODO comments
 ;  and stores the result
 endForD: LDBA    div1Sign,s  ;
          CPBA    div2Sign,s  ;
-         BREQ    endForD4    ;
+         BREQ    endForD2    ;
          LDWA    dresult,s   ;
          NOTA                ;
          ADDA    1,i         ;
@@ -767,7 +767,7 @@ endForD: LDBA    div1Sign,s  ;
          NOTA                ;
          ADDA    1,i         ;
          STWA    remaind,s   ;
-endForD4:LDWA    dresult,s   ;
+endForD2:LDWA    dresult,s   ;
          STWA    retDiv,s    ;
          LDWA    0,i         ;cleanup
          STWA    dk,s        
