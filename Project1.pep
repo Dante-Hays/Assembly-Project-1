@@ -49,7 +49,7 @@ opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
 
 
 
-start:   LDWA    0,i         ;clear the array if needed
+start:   LDWA    0,i         ;clear the array if needed from previous loop
          LDWX    inVecL,d    ;starting at the highest index, zero all values
          STWA    inVec,x
          SUBX    1,i
@@ -278,13 +278,13 @@ badOp:   STRO    errMsg,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      askPr
+         BR      askPr       ;ask for input again
 
-noNum:   STRO    errMsg2,d    ;output a message explaining the error
+noNum:   STRO    errMsg2,d   ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
          ADDA    0x30,i
          STBA    charOut,d
-         BR      askPr           
+         BR      askPr       ;ask for input again     
 
 ;set operand and its precedence
 setAdd:  STWA    operand,d   ;store operand and set precedence
@@ -556,10 +556,10 @@ endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
          BRLT    output      ;I dont think we need this here, but i left for now ************************************
          BR      ifLoops     
 
-output:  LDWA    stackin,s   
+output:  LDWA    stackin,s   ;output result
          STRO    outputs,d   
          DECO    stackin,s   
-         BR      askPr
+         BR      askPr       ;loop back to prompt to accept next expression or quit
 
 ;**************************************
 ;*********PostFix Calculations*********
@@ -932,9 +932,7 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          BRGT    alsLoop     
          LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
-         RET   
-
-         BR      askPr  
+         RET     
 
 goodbye: STRO    byeMsg,d    ;say goodbye and end
          BR      end
