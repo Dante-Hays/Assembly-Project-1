@@ -563,12 +563,11 @@ output:  LDWA    stackin,s   ;output result
 
 ;**************************************
 ;*********PostFix Calculations*********
-;Opperand Decisions and stack managment
+;Operand Decisions and stack management
 ;**************************************
-RHop:    .BLOCK  2           ;Temperary storage for int intake #2d
-LHop:    .BLOCK  2           ;Temperary Storage for int intake #2d
-retAdd:  .EQUATE 0           ;returned value #2d
-retSub:  .EQUATE 0           ;returned value #2d
+RHop:    .BLOCK  2           ;Temporary storage for int intake #2d
+LHop:    .BLOCK  2           ;Temporary storage for int intake #2d
+resTemp: .BLOCK  2           ;Temporary storage for result intake #2d
 
 
 ;;TODO Finish adding multiplication and Division
@@ -584,12 +583,9 @@ addfunc: LDWA    stackin,s   ;pop
          ADDSP   2,i         ;pop #stackin
          LDWA    LHop,d      ;load first value to accumulator
          ADDA    RHop,d      ;add second value to it
-         STWA    retAdd,d    ;store in the result
          SUBSP   2,i         ;make room for calculation on stack #stackin
          STWA    stackin,s   
          BR      ifLoops     
-
-
 
 subfunc: LDWA    stackin,s   ;pop
          STWA    RHop,d      ;Saves right hand operator #2d
@@ -599,52 +595,114 @@ subfunc: LDWA    stackin,s   ;pop
          ADDSP   2,i         ;pop #stackin
          LDWA    LHop,d      ;load first value to accumulator
          SUBA    RHop,d      ;add second value to it
-         STWA    retSub,d    ;store in the result
          SUBSP   2,i         ;make room for calculation on stack #stackin
          STWA    stackin,s   
          BR      ifLoops     
 
-multfunc:CALL    multiply
+multfunc:LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -4,s 
+         LDWA    RHop,d
+         STWA    -6,s
+         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         CALL    multiply
          LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   
          BR      ifLoops      
 
-divfunc: CALL    divide
+divfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -6,s 
+         LDWA    RHop,d
+         STWA    -8,s
+         SUBSP   8,i         ;push #remaind #retVal #div1 #div2
+         CALL    divide
          LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
-         STWA    stackin,s   
+         ADDSP   8,i         ;pop #remaind #retVal #div1 #div2 ; leave the calculation on the stack for next loop
+         SUBSP   2,i         ;make room for calculation on stack #stackin
+         STWA    stackin,s  
          BR      ifLoops          
 
-modfunc: CALL    divide
+modfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -6,s 
+         LDWA    RHop,d
+         STWA    -8,s
+         SUBSP   8,i         ;push #remaind #retVal #div1 #div2
+         CALL    divide
          LDWA    6,s
          STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         ADDSP   8,i         ;pop #remaind #retVal #div1 #div2 ; leave the calculation on the stack for next loop
+         SUBSP   2,i         ;make room for calculation on stack #stackin
          STWA    stackin,s   
          BR      ifLoops     
 
-andfunc: CALL    and
+andfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -4,s 
+         LDWA    RHop,d
+         STWA    -6,s
+         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         CALL    and
          LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   
          BR      ifLoops    
 
-orfunc:  CALL    or 
+orfunc:  LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -4,s 
+         LDWA    RHop,d
+         STWA    -6,s
+         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         CALL    or
          LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   
-         BR      ifLoops    
+         BR      ifLoops   
 
-xorfunc: CALL    xor 
+xorfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d
+         STWA    -4,s 
+         LDWA    RHop,d
+         STWA    -6,s
+         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         CALL    xor
          LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   
-         BR      ifLoops     
+         BR      ifLoops       
 
 ;*****OPERATOR FUNCTIONS******
 ;Operator functions can handle any shorts (-65535 to 65535)
