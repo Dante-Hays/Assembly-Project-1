@@ -549,6 +549,15 @@ ifLoops: LDWX    vecI,d      ;load inVec index
          CPWA    '^',i       ;if ^ branch to XOR
          BREQ    xorfunc     
 
+         CPWA    '<',i       ;if < branch to arith left shift
+         BREQ    alsfunc
+
+         CPWA    '>',i       ;if > branch to logical right shift
+         BREQ    lrsfunc
+
+         CPWA    '}',i       ;if } branch to arithmetic right shift
+         BREQ    arsfunc
+
          LDWA    value,d     
          STWA    stackin,d   
          SUBSP   2,i         ;push #stackin onto stack
@@ -673,10 +682,10 @@ andfunc: LDWA    stackin,s   ;pop
          STWA    -4,s        ;store
          LDWA    RHop,d      ;load
          STWA    -6,s        ;store
-         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         SUBSP   6,i         ;push #retVal #and1 #and2
          CALL    and         ;call AND function
          LDWA    4,s         ;load result
-         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #and1 #and2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   ;store result in runtime stack for better
          BR      ifLoops     ;go back to loop
 
@@ -690,10 +699,10 @@ orfunc:  LDWA    stackin,s   ;pop
          STWA    -4,s        ;store
          LDWA    RHop,d      ;load
          STWA    -6,s        ;store
-         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         SUBSP   6,i         ;push #retVal #or1 #or2
          CALL    or          ;call OR function
          LDWA    4,s         ;get result
-         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #or1 #or2 ; leave the calculation on the stack for next loop
          STWA    stackin,s   ;put result here
          BR      ifLoops     ;go back into loop
 
@@ -707,10 +716,61 @@ xorfunc: LDWA    stackin,s   ;pop
          STWA    -4,s        ;store
          LDWA    RHop,d      ;load
          STWA    -6,s        ;store
-         SUBSP   6,i         ;push #retVal #mult1 #mult2
+         SUBSP   6,i         ;push #retVal #xor1 #xor2
          CALL    xor         ;call XOR function
          LDWA    4,s         ;get result
-         ADDSP   4,i         ;pop #mult1 #mult2 ; leave the calculation on the stack for next loop
+         ADDSP   4,i         ;pop #xor1 #xor2 ; leave the calculation on the stack for next loop
+         STWA    stackin,s   ;store result
+         BR      ifLoops     ;go back into loop
+
+alsfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d      ;load left and right into the runtime stack for calculation...
+         STWA    -4,s        ;store
+         LDWA    RHop,d      ;load
+         STWA    -6,s        ;store
+         SUBSP   6,i         ;push #retVal #als1 #als2 
+         CALL    als         ;call XOR function
+         LDWA    4,s         ;get result
+         ADDSP   4,i         ;pop #als1 #als2 ; leave the calculation on the stack for next loop 
+         STWA    stackin,s   ;store result
+         BR      ifLoops     ;go back into loop
+
+arsfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d      ;load left and right into the runtime stack for calculation...
+         STWA    -4,s        ;store
+         LDWA    RHop,d      ;load
+         STWA    -6,s        ;store
+         SUBSP   6,i         ;push #retVal #ars1 #ars2 
+         CALL    ars         ;call XOR function
+         LDWA    4,s         ;get result
+         ADDSP   4,i         ;pop #ars1 #ars2 ; leave the calculation on the stack for next loop 
+         STWA    stackin,s   ;store result
+         BR      ifLoops     ;go back into loop
+
+lrsfunc: LDWA    stackin,s   ;pop
+         STWA    RHop,d      ;Saves right hand operator #2d
+         ADDSP   2,i         ;pop #stackin
+         LDWA    stackin,s   ;pop next item off stack #stackin
+         STWA    LHop,d      ;takes item off the stack and stores as Lhop
+         ADDSP   2,i         ;pop #stackin
+         LDWA    LHop,d      ;load left and right into the runtime stack for calculation...
+         STWA    -4,s        ;store
+         LDWA    RHop,d      ;load
+         STWA    -6,s        ;store
+         SUBSP   6,i         ;push #retVal #lrs1 #lrs2 
+         CALL    lrs         ;call XOR function
+         LDWA    4,s         ;get result
+         ADDSP   4,i         ;pop #lrs1 #lrs2 ; leave the calculation on the stack for next loop 
          STWA    stackin,s   ;store result
          BR      ifLoops     ;go back into loop
 
@@ -937,75 +997,68 @@ and:     LDWA    and1,s      ;load first param to A
 retOr:   .EQUATE 6           ;returned value from bitwise #2d
 or1:     .EQUATE 4           ;formal parameter #2d
 or2:     .EQUATE 2           ;formal parameter #2d
-
 or:      LDWA    or1,s       ;load first param to A
          ORA     or2,s       ;bitwise or with second param
          STWA    retOr,s     ;store result in retOr
          RET                 
 
 ;********* ARITHMETIC RIGHT SHIFT ***********
-retArs:  .WORD   0           ;returned value from bitwise arith right shift #2d
-ars1:    .WORD   0           ;formal parameter #2d
-ars2:    .WORD   0           ;formal parameter #2d
-arsTemp: .WORD   0           ;temp for right shift loop
-
-ars:     LDWA    ars1,d      ;load first param to A
-
-arsLoop: LDWA    ars1,d      ;load the value in ars1
+retArs:  .EQUATE 6           ;returned value from bitwise arith #2d
+ars1:    .EQUATE 4           ;formal parameter #2d
+ars2:    .EQUATE 2           ;formal parameter #2d
+ars:     LDWA    ars1,s      ;load first param to A
+arsLoop: LDWA    ars1,s      ;load the value in ars1
          ASRA                ;aritmetic right shift
-         STWA    ars1,d      ;store to ars1
-         LDWA    ars2,d      ;load num of shifts to perform
+         STWA    ars1,s      ;store to ars1
+         LDWA    ars2,s      ;load num of shifts to perform
          SUBA    1,i         ;loop until desired shifts are done
-         STWA    ars2,d      
+         STWA    ars2,s      
          CPWA    0,i         
          BRGT    arsLoop     
-         LDWA    ars1,d      ;load the value in ars1
-         STWA    retArs,d    ;store result in retArs
+         LDWA    ars1,s      ;load the value in ars1
+         STWA    retArs,s    ;store result in retArs
          RET                 
 
 ;********* LOGICAL RIGHT SHIFT ***********
-retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
-lrs1:    .WORD   0           ;formal parameter #2d
-lrs2:    .WORD   0           ;formal parameter #2d
-lrsTemp: .WORD   0           ;temp for logical right loop
-
-lrs:     LDWA    lrs1,d      ;load first param to A
+retLrs:  .EQUATE 6           ;returned value from bitwise arith #2d
+lrs1:    .EQUATE 4           ;formal parameter #2d
+lrs2:    .EQUATE 2           ;formal parameter #2d
+lrs:     LDWA    lrs1,s      ;load first param to A
          CPWA    0,i         ;see if it is negative
          BRGT    isPos       ;if not branch to perform the shift normally
          NEGA                ;else negate it to positive
-isPos:   STWA    lrs1,d      ;store to lrs1
+isPos:   STWA    lrs1,s      ;store to lrs1
 
-lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
+lrsLoop: LDWA    lrs1,s      ;load the value in lrs1
          ASRA                ;aritmetic right shift
-         STWA    lrs1,d      ;store to lrs1
-         LDWA    lrs2,d      ;load num of shifts to perform
+         STWA    lrs1,s      ;store to lrs1
+         LDWA    lrs2,s      ;load num of shifts to perform
          SUBA    1,i         ;loop until desired shifts are done
-         STWA    lrs2,d      
+         STWA    lrs2,s      
          CPWA    0,i         
          BRGT    lrsLoop     
-         LDWA    lrs1,d      ;load the value in the lrs1
-         STWA    retLrs,d    ;store result in retLrs
+         LDWA    lrs1,s      ;load the value in the lrs1
+         STWA    retLrs,s    ;store result in retLrs
          RET                 
 
 ;********* LEFT SHIFT ***********
-retAls:  .WORD   0           ;returned value from bitwise left shift #2d
-als1:    .WORD   0           ;formal parameter #2d
-als2:    .WORD   0           ;formal parameter #2d
-alsTemp: .WORD   0           ;temp for left shift loop
-
-als:     LDWA    als1,d      ;load first param to A
-
-alsLoop: LDWA    als1,d      ;load the value in als1
+retAls:  .EQUATE 6           ;returned value from bitwise arith #2d
+als1:    .EQUATE 4           ;formal parameter #2d
+als2:    .EQUATE 2           ;formal parameter #2d
+als:     LDWA    als1,s      ;load first param to A
+alsLoop: LDWA    als1,s      ;load the value in als1
          ASLA                ;aritmetic left shift with second param
-         STWA    als1,d      ;store to als1
-         LDWA    als2,d      ;load num of shifts to perform
+         STWA    als1,s      ;store to als1
+         LDWA    als2,s      ;load num of shifts to perform
          SUBA    1,i         ;loop until desired shifts are done
-         STWA    als2,d      
+         STWA    als2,s      
          CPWA    0,i         
          BRGT    alsLoop     
-         LDWA    als1,d      ;load the value in als1
-         STWA    retAls,d    ;store result in retAls
+         LDWA    als1,s      ;load the value in als1
+         STWA    retAls,s    ;store result in retAls
          RET                 
+
+
 
 goodbye: STRO    byeMsg,d    ;say goodbye and end
          BR      end         
