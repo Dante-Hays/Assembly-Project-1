@@ -1,10 +1,10 @@
 ;********************************************************************
-; Names:   Charles Kinser
-;          Drew Dorris
-;          Dante Hays
-;          Matthew Lockard
-; Lab:     Project
-; Date:    9/26/2021
+; Names: Charles Kinser
+; Drew Dorris
+; Dante Hays
+; Matthew Lockard
+; Lab: Project
+; Date: 9/26/2021
 ; Purpose:
 ;********************************************************************
 
@@ -21,14 +21,6 @@ vecI:    .WORD   0           ;store current index of inVec array when register i
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
 ;*****************************
-;DISPLAY
-;*****************************
-;MAIN
-main:    STRO    menu,d      ;display the starting menu
-askPr:   STRO    prompt,d    ;display the user prompt
-         BR      start
-
-;*****************************
 ;INPUT TO ARRAY
 ;*****************************
 
@@ -37,90 +29,69 @@ askPr:   STRO    prompt,d    ;display the user prompt
 expNum:  .WORD   1           ;true or false for expecting next input to be number #2d
 nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
 skipNum: .WORD   0           ;the number of times to skip checking the input #2d
-stopFlg: .WORD   0           ;boolean for stoping char intake #2d
 
 value:   .WORD   0           ;temporary storage for integer intake #2d
 num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d
-operand: .WORD   0           ;variable for storing operand #2c
-opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
+operator:.WORD   0           ;variable for storing operator
+opTemp:  .WORD   0           ;temp var for storing operator while swapping
+
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
 
 
+;MAIN
 
-
-start:   LDWA    0,i         ;clear the array if needed
-         LDWX    inVecL,d    ;starting at the highest index, zero all values
-         STWA    inVec,x
-         SUBX    1,i
-         CPWX    0,i
-         BRGT    start
-         
-         STWA    stopFlg,d
-         STWA    value,d
-         STWA    num1,d
-         STWA    num2,d
-         STWA    num3,d
-
-         LDBA    charIn,d    ;prep for first run by populating num2
-         SUBA    0x30,i      ;convert to deci
-         STWA    num2,d
+main:    LDBA    charIn,d    ;prep for first run by populating num2
+         SUBA    0x0030,i    ;convert to deci
+         STWA    num2,d      
          LDWA    0x0000,i    ;clear accumulator
          LDBA    charIn,d    ;prep for first run by populating num3
-         SUBA    0x30,i      ;convert to deci
-         STWA    num3,d
+         SUBA    0x0030,i    ;convert to deci
+         STWA    num3,d      
 loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
-         STWA    num1,d
-         LDWA    num3,d
-         STWA    num2,d
+         STWA    num1,d      
+         LDWA    num3,d      
+         STWA    num2,d      
          LDWA    0x0000,i    ;clear accumulator
-         LDWA    stopFlg,d   ;check if input should be taken in
-         CPWA    1,i
-         BREQ    skipChk
-input:   LDBA    charIn,d         
-         SUBA    0x30,i      ;convert to deci
-         STWA    num3,d
+         LDBA    charIn,d    
+         SUBA    0x0030,i    ;convert to deci
+         STWA    num3,d      
 
-         ADDA    0x30,i      ;Check if line break was found, if so, stop accepting new input
-         CPWA    0x0A,i
-         BRNE    skipChk
-         LDWA    1,i
-         STWA    stopFlg,d
-         
-
-         ;the skip check code is used to skip over unwanted/extra input characters
-         ;for example, after reading in AND, reading the ND in the next loop should be avoided   
-skipChk: LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
-         CPWA    0,i
-         BREQ    goOn
+;the skip check code is used to skip over unwanted/extra input characters
+;for example, after reading in AND, reading the ND in the next loop should be avoided
+         LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
+         CPWA    0,i         
+         BREQ    goOn        
          SUBA    1,i         ;decrement skipNum by 1
-         STWA    skipNum,d
+         STWA    skipNum,d   
          BR      loop        ;go back to start of loop without checking current input char
-         
 goOn:    LDWA    num1,d      ;if num1 is not deci, store as char, else add it to value
          CPWA    9,i         ;check for int by checking for range 0
-         BRGT    notDec
-         CPWA    0,i
-         BRLT    notDec
-         ADDA    value,d
-         STWA    value,d
+         BRGT    notDec      
+         CPWA    0,i         
+         BRLT    notDec      
+         ADDA    value,d     
+         STWA    value,d     
          LDWA    num2,d      ;if num2 is not deci, store current value, else multiply value by 10
-         CPWA    9,i
-         BRGT    decDone
-         CPWA    0,i
-         BRLT    decDone
+         CPWA    9,i         
+         BRGT    decDone     
+         CPWA    0,i         
+         BRLT    decDone     
          LDWA    10,i        ;Call the multiplication function to multiply 'value' by 10
-         STWA    -4,s         
-         LDWA    value,d
-         STWA    -6,s
-         SUBSP   6,i         ;push #retVal #mult1 #mult2 
+         STWA    -4,s        
+         LDWA    value,d     
+         STWA    -6,s        
+         SUBSP   6,i         ;push #retVal #mult1 #mult2
          CALL    multiply    
-         LDWA    4,s
-         STWA    value,d
-         ADDSP   6,i         ;pop #mult2 #mult1 #retVal 
+         LDWA    4,s         
+         STWA    value,d     
+         ADDSP   6,i         ;pop #mult2 #mult1 #retVal
          BR      loop        ;loop back to get next digit
 
-;Check for character(s) type and convert to a singular operand for array storage.
+;Check for character(s) type and convert to a singular operator for array storage.
 notDec:  LDWA    num1,d      ;load current operator to A
          ADDA    0x0030,i    ;convert back to ascii char
 
@@ -129,14 +100,13 @@ notDec:  LDWA    num1,d      ;load current operator to A
          CPWA    0x0020,i    ;check for white space and skip over if found
          BREQ    loop        
          CPWA    '-',i       ;go to negChk to determine if the - is a minus sign or a negative sign
-         BREQ    negChk 
+         BREQ    negChk      
 
          LDWA    expNum,d    ;error out if expecting number
-         CPWA    1,i
-         BREQ    noNum
-         
-         LDWA    num1,d
-         ADDA    0x30,i
+         CPWA    1,i         
+         BREQ    noNum       
+         LDWA    num1,d      
+         ADDA    0x0030,i    
          CPWA    '+',i       ;If the current character matches a simple op. assign precedence and store accordingly
          BREQ    setAdd      
          CPWA    '*',i       
@@ -153,7 +123,7 @@ notDec:  LDWA    num1,d      ;load current operator to A
          BREQ    setXor      
 
 andChk:  CPWA    'A',i       ;Check for the AND characters in series
-         BRNE    xorChk       
+         BRNE    xorChk      
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    'N',i       
@@ -165,7 +135,7 @@ andChk:  CPWA    'A',i       ;Check for the AND characters in series
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
          LDWA    '&',i       
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc3        
 
 xorChk:  LDWA    num1,d      ;Check for the XOR characters in series
@@ -183,7 +153,7 @@ xorChk:  LDWA    num1,d      ;Check for the XOR characters in series
          LDWA    2,i         ;load value into skipNum to skip over excess character(s) (N and D)
          STWA    skipNum,d   
          LDWA    '^',i       
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc2        
 
 orChk:   LDWA    num1,d      ;Check for the OR characters in series
@@ -197,7 +167,7 @@ orChk:   LDWA    num1,d      ;Check for the OR characters in series
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '\|',i      
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc1        
 
 lShftChk:LDWA    num1,d      ;Check for the << characters in series
@@ -211,17 +181,17 @@ lShftChk:LDWA    num1,d      ;Check for the << characters in series
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '<',i       
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc4        ;assign precedence for operator and store
 
 rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    badOp       ;ERROR, incomplete/invalid operator 
+         BRNE    badOp       ;ERROR, incomplete/invalid operator
          LDWA    num2,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
-         BRNE    rLog
+         BRNE    rLog        
          LDWA    num3,d      
          ADDA    0x0030,i    ;convert back to ascii char
          CPWA    '>',i       
@@ -229,12 +199,12 @@ rShftChk:LDWA    num1,d      ;Check for the >> or >>> characters in series
          LDWA    1,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '}',i       
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc4        ;assign precedence for operator and store
 rLog:    LDWA    2,i         ;load value into skipNum to skip over excess character(s)
          STWA    skipNum,d   
          LDWA    '>',i       
-         STWA    operand,d   
+         STWA    operator,d  
          BR      prc4        ;assign precedence for operator and store
 
 negChk:  LDWA    expNum,d    ;if expecting an int, set next integer to be negative, else, store a minus sign into array
@@ -244,50 +214,50 @@ negChk:  LDWA    expNum,d    ;if expecting an int, set next integer to be negati
          BR      setSub      ;assign precedence for operator and store
 negT:    LDWA    1,i         ;set next integer to be negative
          STWA    nextNeg,d   
-         BR      loop
+         BR      loop        
 
 badOp:   STRO    errMsg,d    ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
-         ADDA    0x30,i
-         STBA    charOut,d
-         BR      end
+         ADDA    0x0030,i    
+         STBA    charOut,d   
+         BR      end         
 
-noNum:   STRO    errMsg2,d    ;output a message explaining the error
+noNum:   STRO    errMsg2,d   ;output a message explaining the error
          LDWA    num1,d      ;display bad operator
-         ADDA    0x30,i
-         STBA    charOut,d
-         BR      end           
+         ADDA    0x0030,i    
+         STBA    charOut,d   
+         BR      end         
 
-;set operand and its precedence
-setAdd:  STWA    operand,d   ;store operand and set precedence
+;set operator and its precedence
+setAdd:  STWA    operator,d  ;store operator and set precedence
          BR      prc5        
 
-setSub:  STWA    operand,d   ;store operand and set precedence
+setSub:  STWA    operator,d  ;store operator and set precedence
          BR      prc5        
 
-setMult: STWA    operand,d   ;store operand and set precedence
+setMult: STWA    operator,d  ;store operator and set precedence
          BR      prc6        
 
-setDiv:  STWA    operand,d   ;store operand and set precedence
+setDiv:  STWA    operator,d  ;store operator and set precedence
          BR      prc6        
 
-setMod:  STWA    operand,d   ;store operand and set precedence
+setMod:  STWA    operator,d  ;store operator and set precedence
          BR      prc6        
 
-setAnd:  STWA    operand,d   ;store operand and set precedence
+setAnd:  STWA    operator,d  ;store operator and set precedence
          BR      prc3        
 
-setOr:   STWA    operand,d   ;store operand and set precedence
+setOr:   STWA    operator,d  ;store operator and set precedence
          BR      prc1        
 
-setXor:  STWA    operand,d   ;store operand and set precedence
+setXor:  STWA    operator,d  ;store operator and set precedence
          BR      prc2        
 
 ;add current accumulator word to the array and prints it to the output
 arayStor:STBA    charOut,d   ;print the operator to the output
          LDWA    0x0020,i    ;add a whitespace
          STBA    charOut,d   
-         LDWA    operand,d   ;reload operator to A
+         LDWA    operator,d  ;reload operator to A
          LDWX    vecI,d      ;load inVec index
          STWA    inVec,x     ;store in array
          LDWA    vecI,d      ;increment index & length
@@ -418,7 +388,7 @@ chkPrc:  LDWX    prcIndex,d  ;load precedence array index
          BR      swapOp      ;else swap the operators
 
 ;Stores the current operator to the operator array
-opAryStr:LDWA    operand,d   ;load operand to A
+opAryStr:LDWA    operator,d  ;load operator to A
          LDWX    opIndex,d   ;load operator array index
          STWA    opArray,x   ;store op in array
          LDWA    opIndex,d   ;increment op index
@@ -434,16 +404,16 @@ opAryStr:LDWA    operand,d   ;load operand to A
 ;previous operator to the output stack
 swapOp:  LDBA    1,i         ;set swap to true
          STBA    swapTrue,d  
-         LDWA    operand,d   ;load current operand to A
+         LDWA    operator,d  ;load current operator to A
          STWA    opTemp,d    ;store it to a temp var
          LDWX    opIndex,d   ;load operator array index
          SUBX    2,i         ;decrement to previously stored operator
          STWX    opIndex,d   ;store the new operator index
          LDWA    opArray,x   ;store the op to A
-         STWA    operand,d   ;store the operand
+         STWA    operator,d  ;store the operator
          BR      arayStor    ;store the operator in the output array
-swapped: LDWA    opTemp,d    ;load the temp var for the operand that was swapped
-         STWA    operand,d   ;store it back as the current operand
+swapped: LDWA    opTemp,d    ;load the temp var for the operator that was swapped
+         STWA    operator,d  ;store it back as the current operator
          LDWX    prcIndex,d  ;load precedence array index
          SUBX    2,i         ;decrement by one operator
          STWX    prcIndex,d  ;store new index
@@ -466,7 +436,7 @@ addOps:  LDBA    1,i         ;set add to true
          SUBX    2,i         ;move to the top operator
          STWX    opIndex,d   ;store the new index
          LDWA    opArray,x   ;load the op to A
-         STWA    operand,d   ;store the operand
+         STWA    operator,d  ;store the operator
          BR      arayStor    ;store the value to the output array
 
 ;*****************************
@@ -504,17 +474,17 @@ ifLoops: LDWX    vecI,d      ;load inVec index
          CPWA    '/',i       
          BREQ    divfunc     ;if operator then branch to div func
 
-         CPWA    '%',i
-         BREQ    modfunc
+         CPWA    '%',i       
+         BREQ    modfunc     
 
-         CPWA    '&',i
-         BREQ    andfunc
+         CPWA    '&',i       
+         BREQ    andfunc     
 
-         CPWA    '\|',i
-         BREQ    orfunc
+         CPWA    '\|',i      
+         BREQ    orfunc      
 
-         CPWA    '^',i
-         BREQ    xorfunc
+         CPWA    '^',i       
+         BREQ    xorfunc     
 
          LDWA    value,d     
          STWA    stackin,d   
@@ -543,8 +513,8 @@ retSub:  .EQUATE 0           ;returned value #2d
 
 
 ;;TODO Finish adding multiplication and Division
-;;mulfunc: Call    mul         ;Multiplication Method
-;;divfunc: Call    div         ;Division Method
+;;mulfunc: Call mul ;Multiplication Method
+;;divfunc: Call div ;Division Method
 
 
 addfunc: LDWA    stackin,s   ;pop
@@ -575,43 +545,43 @@ subfunc: LDWA    stackin,s   ;pop
          STWA    stackin,s   
          BR      ifLoops     
 
-multfunc:CALL    multiply
-         LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
-         STWA    stackin,s   
-         BR      ifLoops      
-
-divfunc: CALL    divide
-         LDWA    4,s
-         STWA    retSub,d    ;store in the result
-         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
-         STWA    stackin,s   
-         BR      ifLoops          
-
-modfunc: CALL    divide
-         LDWA    6,s
+multfunc:CALL    multiply    
+         LDWA    4,s         
          STWA    retSub,d    ;store in the result
          ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
          STWA    stackin,s   
          BR      ifLoops     
 
-andfunc: CALL    and
-         LDWA    4,s
+divfunc: CALL    divide      
+         LDWA    4,s         
          STWA    retSub,d    ;store in the result
          ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
          STWA    stackin,s   
-         BR      ifLoops    
+         BR      ifLoops     
 
-orfunc:  CALL    or 
-         LDWA    4,s
+modfunc: CALL    divide      
+         LDWA    6,s         
          STWA    retSub,d    ;store in the result
          ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
          STWA    stackin,s   
-         BR      ifLoops    
+         BR      ifLoops     
 
-xorfunc: CALL    xor 
-         LDWA    4,s
+andfunc: CALL    and         
+         LDWA    4,s         
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
+
+orfunc:  CALL    or          
+         LDWA    4,s         
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
+
+xorfunc: CALL    xor         
+         LDWA    4,s         
          STWA    retSub,d    ;store in the result
          ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
          STWA    stackin,s   
@@ -633,7 +603,7 @@ k:       .EQUATE 2           ;local variable #2d
 result:  .EQUATE 0           ;local variable; calculated result #2d
 ;many changes made to this variable in function; end result placed into retVal
 ;Multiply function takes two number (word) parameters, multiplies them,
-;  and returns the result in retVal.
+; and returns the result in retVal.
 ;This function works by adding mult1 to itself mult2 times.
 ;Ex. if mult1 is 60 and mult2 is 3, the function does 60 + 60 + 60 and returns the value
 multiply:SUBSP   6,i         ;push #m1Sign #m2Sign #k #result
@@ -676,7 +646,7 @@ forM:    LDWA    k,s         ;load k for comparison if not loaded already, to se
          STWA    k,s         ;store it to k
          BR      forM        ;do the loop again!
 ;The end function which prints the equation
-;  and returns the result
+; and returns the result
 endForM: LDBA    m1Sign,s    ;
          CPBA    m2Sign,s    ;
          BREQ    endForM2    ;
@@ -705,11 +675,11 @@ div2Sign:.EQUATE 4           ;local variable #1d
 dk:      .EQUATE 2           ;local variable #2d
 dresult: .EQUATE 0           ;local variable #2d
 ;Divide function takes two number (word) parameters, divides them,
-;  and returns the quotient in retDiv as well as the remainder/modulo in remaind.
+; and returns the quotient in retDiv as well as the remainder/modulo in remaind.
 ;This function works by adding div2 to itself until it is greater than div1.
 ;The amount of times div2 was added to itself is the result.
 ;Ex. if div1 is 60 and div2 is 3, the function does 3 + 3 + .... until it reaches 60
-;  and counts how many times it added it
+; and counts how many times it added it
 divide:  SUBSP   6,i         ;push #div1Sign #div2Sign #dk #dresult
          LDWA    0,i         ;TODO comments
          STWA    dresult,s   ;
@@ -753,7 +723,7 @@ forD:    LDWA    dk,s        ;TODO comments
          LDWA    dk,s        ;
          BR      forD        ;
 ;After finding the result, this function
-;  checks what the remainder/modulo value is
+; checks what the remainder/modulo value is
 checkRmd:LDWA    dk,s        ;TODO comments
          CPWA    div1,s      ;
          BREQ    endForD     ;
@@ -768,11 +738,11 @@ checkRmd:LDWA    dk,s        ;TODO comments
          STWA    remaind,s   ;
          BR      endForD     ;
 ;If dividing by zero, this function is called
-;  and sets the result to -1
+; and sets the result to -1
 divZero: LDWA    -1,i        ;TODO comments
          STWA    dresult,s   ;
 ;The end function that prints out the equation
-;  and stores the result
+; and stores the result
 endForD: LDBA    div1Sign,s  ;
          CPBA    div2Sign,s  ;
          BREQ    endForD2    ;
@@ -822,7 +792,7 @@ endForX: LDWA    0,i
 
 ;********* AND **********
 ;does a bitwise and of two parameters
-retAnd:  .EQUATE 6          ;returned value from bitwise #2d
+retAnd:  .EQUATE 6           ;returned value from bitwise #2d
 and1:    .EQUATE 4           ;formal parameter #2d
 and2:    .EQUATE 2           ;formal parameter #2d
 and:     LDWA    and1,s      ;load first param to A
@@ -903,20 +873,10 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          BRGT    alsLoop     
          LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
-         RET   
+         RET                 
 
-         STOP  
-
-;*****************************
-;STRINGS
-;*****************************
-menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\n\x00"
-
-prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
-
-errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
-         
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
-end:     .END                 
+
+         STOP
+end:     .END            
