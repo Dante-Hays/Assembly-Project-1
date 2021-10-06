@@ -924,13 +924,8 @@ menu:    .ASCII  "Welcome to the CDDM Calculator!\n-----------------------------
 prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
 
 errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
-
-              
-end:     .END               
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
          
-=======
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
-
 
 end:     .END                 
