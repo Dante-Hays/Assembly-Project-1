@@ -478,8 +478,17 @@ ifLoops: LDWX    vecI,d      ;load inVec index
          CPWA    '/',i       
          BREQ    divfunc     ;if operator then branch to div func
 
+         CPWA    '%',i
+         BREQ    modfunc
 
+         CPWA    '&',i
+         BREQ    andfunc
 
+         CPWA    '\|',i
+         BREQ    orfunc
+
+         CPWA    '^',i
+         BREQ    xorfunc
 
          LDWA    value,d     
          STWA    stackin,d   
@@ -540,9 +549,47 @@ subfunc: LDWA    stackin,s   ;pop
          STWA    stackin,s   
          BR      ifLoops     
 
-multfunc:BR      outputz     
+multfunc:CALL    multiply
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops      
 
-divfunc: BR      outputz     
+divfunc: CALL    divide
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops          
+
+modfunc: CALL    divide
+         LDWA    6,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
+
+andfunc: CALL    and
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops    
+
+orfunc:  CALL    or 
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops    
+
+xorfunc: CALL    xor 
+         LDWA    4,s
+         STWA    retSub,d    ;store in the result
+         ADDSP   4,i         ;pop #retVal #stackin ; leave the calculation on the stack for next loop
+         STWA    stackin,s   
+         BR      ifLoops     
 
 outputz: STRO    teststr,d   
          BR      end         
@@ -711,7 +758,7 @@ divZero: LDWA    -1,i        ;TODO comments
 ;  and stores the result
 endForD: LDBA    div1Sign,s  ;
          CPBA    div2Sign,s  ;
-         BREQ    endForD4    ;
+         BREQ    endForD2    ;
          LDWA    dresult,s   ;
          NOTA                ;
          ADDA    1,i         ;
@@ -720,7 +767,7 @@ endForD: LDBA    div1Sign,s  ;
          NOTA                ;
          ADDA    1,i         ;
          STWA    remaind,s   ;
-endForD4:LDWA    dresult,s   ;
+endForD2:LDWA    dresult,s   ;
          STWA    retDiv,s    ;
          LDWA    0,i         ;cleanup
          STWA    dk,s        
@@ -758,24 +805,23 @@ endForX: LDWA    0,i
 
 ;********* AND **********
 ;does a bitwise and of two parameters
-retAnd:  .WORD   0           ;returned value from bitwise and #2d
-and1:    .WORD   0           ;formal parameter #2d
-and2:    .WORD   0           ;formal parameter #2d
-
-and:     LDWA    and1,d      ;load first param to A
-         ANDA    and2,d      ;bitwise and with second param
-         STWA    retAnd,d    ;store result in retAnd
+retAnd:  .EQUATE 6          ;returned value from bitwise #2d
+and1:    .EQUATE 4           ;formal parameter #2d
+and2:    .EQUATE 2           ;formal parameter #2d
+and:     LDWA    and1,s      ;load first param to A
+         ANDA    and2,s      ;bitwise and with second param
+         STWA    retAnd,s    ;store result in retAnd
          RET                 
 
 ;********* OR ***********
 ;does a bitwise or of two parameters
-retOr:   .WORD   0           ;returned value from bitwise or #2d
-or1:     .WORD   0           ;formal parameter #2d
-or2:     .WORD   0           ;formal parameter #2d
+retOr:   .EQUATE 6           ;returned value from bitwise #2d
+or1:     .EQUATE 4           ;formal parameter #2d
+or2:     .EQUATE 2           ;formal parameter #2d
 
-or:      LDWA    or1,d       ;load first param to A
-         ORA     or2,d       ;bitwise or with second param
-         STWA    retOr,d     ;store result in retOr
+or:      LDWA    or1,s       ;load first param to A
+         ORA     or2,s       ;bitwise or with second param
+         STWA    retOr,s     ;store result in retOr
          RET                 
 
 ;********* ARITHMETIC RIGHT SHIFT ***********
