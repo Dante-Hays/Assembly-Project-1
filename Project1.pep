@@ -21,6 +21,14 @@ vecI:    .WORD   0           ;store current index of inVec array when register i
 inVecL:  .WORD   1           ;length of inVec, global variable #2d
 
 ;*****************************
+;DISPLAY
+;*****************************
+;MAIN
+main:    STRO    menu,d      ;display the starting menu
+askPr:   STRO    prompt,d    ;display the user prompt
+         BR      start       
+
+;*****************************
 ;INPUT TO ARRAY
 ;*****************************
 
@@ -29,22 +37,31 @@ inVecL:  .WORD   1           ;length of inVec, global variable #2d
 expNum:  .WORD   1           ;true or false for expecting next input to be number #2d
 nextNeg: .WORD   0           ;mask for next decimal, can be 0x0000 or 0x1000 if negative #2h
 skipNum: .WORD   0           ;the number of times to skip checking the input #2d
+stopFlg: .WORD   0           ;boolean for stoping char intake #2d
 
 value:   .WORD   0           ;temporary storage for integer intake #2d
 num1:    .BLOCK  2           ;variable for multidigit intake, num1 is the current digit/char #2d
 num2:    .BLOCK  2           ;variable for multidigit intake, num2 is used to look ahead for more digits #2d
 num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to look ahead for certain long operators #2d
-operator:.WORD   0           ;variable for storing operator
-opTemp:  .WORD   0           ;temp var for storing operator while swapping
-
-errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
+operator:.WORD   0           ;variable for storing operator #2c
+opTemp:  .WORD   0           ;temp var for storing operator while swapping #2c
 
 
-;MAIN
 
-main:    LDBA    charIn,d    ;prep for first run by populating num2
+
+start:   LDWA    0,i         ;clear the array if needed
+         LDWX    inVecL,d    ;starting at the highest index, zero all values
+         STWA    inVec,x     
+         SUBX    1,i         
+         CPWX    0,i         
+         BRGT    start       
+         STWA    stopFlg,d   
+         STWA    value,d     
+         STWA    num1,d      
+         STWA    num2,d      
+         STWA    num3,d      
+
+         LDBA    charIn,d    ;prep for first run by populating num2
          SUBA    0x0030,i    ;convert to deci
          STWA    num2,d      
          LDWA    0x0000,i    ;clear accumulator
@@ -56,13 +73,22 @@ loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3
          LDWA    num3,d      
          STWA    num2,d      
          LDWA    0x0000,i    ;clear accumulator
-         LDBA    charIn,d    
+         LDWA    stopFlg,d   ;check if input should be taken in
+         CPWA    1,i         
+         BREQ    skipChk     
+input:   LDBA    charIn,d    
          SUBA    0x0030,i    ;convert to deci
          STWA    num3,d      
 
+         ADDA    0x0030,i    ;Check if line break was found, if so, stop accepting new input
+         CPWA    0x000A,i    
+         BRNE    skipChk     
+         LDWA    1,i         
+         STWA    stopFlg,d   
+
 ;the skip check code is used to skip over unwanted/extra input characters
 ;for example, after reading in AND, reading the ND in the next loop should be avoided
-         LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
+skipChk: LDWA    skipNum,d   ;if skipNum == 0, go on to analyze the input, else, skip analization
          CPWA    0,i         
          BREQ    goOn        
          SUBA    1,i         ;decrement skipNum by 1
@@ -875,8 +901,23 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
          RET                 
 
+         STOP                
+
+;*****************************
+;STRINGS
+;*****************************
+menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\n\x00"
+
+
+prompt:  .ASCII  "-------------------------------\nPlease enter an expression:\n\x00"
+
+
+errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
+
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"
+
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
 
-         STOP
-end:     .END            
+end:     .END                  
+    
