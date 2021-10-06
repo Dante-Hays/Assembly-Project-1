@@ -57,14 +57,14 @@ start:   LDWA    0,i         ;clear the array if needed
          CPWX    0,i
          BRGT    start
 
-         LDWX    63,i 
+         LDWX    63,i        ;clear the op and prc arrays
 opClr:   STWA    opArray,x
          STWA    prcArray,x
          SUBX    1,i
          CPWX    0,i
          BRGT    opClr
          
-         STWA    vecI,d 
+         STWA    vecI,d      ;zero out all variables that require it
          STWA    stopFlg,d
          STWA    value,d
          STWA    num1,d
@@ -85,8 +85,13 @@ opClr:   STWA    opArray,x
 
          CPWA    0x0051,i    ;check if the user wants to quit by looking for Q, if so, goto goodbye
          BREQ    goodbye 
+         CPWA    0x000A,i    ;check for nothing entered,if so, fatal error
+         BRNE    prep
+         STRO    errMsg3,d   ;error out to prevent loop
+         BR      end
+         
 
-         SUBA    0x30,i      ;convert to deci
+prep:    SUBA    0x30,i      ;convert to deci
          STWA    num2,d
          LDWA    0x0000,i    ;clear accumulator
          LDBA    charIn,d    ;prep for first run by populating num3
@@ -942,7 +947,8 @@ menu:    .ASCII  "CDDM Postfix Calculator\n-------------------------------\nThis
 prompt:  .ASCII  "\n-------------------------------\nPlease enter an expression:\n\x00"
 
 errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"  
+errMsg3: .ASCII  "\nFATAL ERROR: NO INPUT ERROR\x00"            
          
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
