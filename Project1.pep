@@ -687,23 +687,67 @@ or:      LDWA    or1,d       ;load first param to A
 ;********* ARITHMETIC RIGHT SHIFT ***********
 retArs:  .WORD   0           ;returned value from bitwise arith right shift #2d
 ars1:    .WORD   0           ;formal parameter #2d
-ars2:    .WORD   0           ;formal parameter #2de
+ars2:    .WORD   0           ;formal parameter #2d
+arsTemp: .WORD   0           ;temp for right shift loop
 
-ars:     RET
+ars:     LDWA    ars1,d      ;load first param to A
+
+arsLoop: LDWA    ars1,d      ;load the value in ars1
+         ASRA                ;aritmetic right shift
+         STWA    ars1,d      ;store to ars1
+         LDWA    ars2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    ars2,d      
+         CPWA    0,i         
+         BRGT    arsLoop     
+         LDWA    ars1,d      ;load the value in ars1
+         STWA    retArs,d    ;store result in retArs
+         RET                 
 
 ;********* LOGICAL RIGHT SHIFT ***********
 retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
 lrs1:    .WORD   0           ;formal parameter #2d
-lrs2:    .WORD   0           ;formal parameter #2de
+lrs2:    .WORD   0           ;formal parameter #2d
+lrsTemp: .WORD   0           ;temp for logical right loop
 
-lrs:     RET                 
+lrs:     LDWA    lrs1,d      ;load first param to A
+         CPWA    0,i         ;see if it is negative
+         BRGT    isPos       ;if not branch to perform the shift normally
+         NEGA                ;else negate it to positive
+isPos:   STWA    lrs1,d      ;store to lrs1
+
+lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
+         ASRA                ;aritmetic right shift
+         STWA    lrs1,d      ;store to lrs1
+         LDWA    lrs2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    lrs2,d      
+         CPWA    0,i         
+         BRGT    lrsLoop     
+         LDWA    lrs1,d      ;load the value in the lrs1
+         STWA    retLrs,d    ;store result in retLrs
+         RET                 
 
 ;********* LEFT SHIFT ***********
-retLefts:  .WORD   0           ;returned value from bitwise left shift #2d
-lefts1:    .WORD   0           ;formal parameter #2d
-lefts2:    .WORD   0           ;formal parameter #2de
+retAls:  .WORD   0           ;returned value from bitwise left shift #2d
+als1:    .WORD   0           ;formal parameter #2d
+als2:    .WORD   0           ;formal parameter #2d
+alsTemp: .WORD   0           ;temp for left shift loop
 
-lefts:     RET  
+als:     LDWA    als1,d      ;load first param to A
 
+alsLoop: LDWA    als1,d      ;load the value in als1
+         ASLA                ;aritmetic left shift with second param
+         STWA    als1,d      ;store to als1
+         LDWA    als2,d      ;load num of shifts to perform
+         SUBA    1,i         ;loop until desired shifts are done
+         STWA    als2,d      
+         CPWA    0,i         
+         BRGT    alsLoop     
+         LDWA    als1,d      ;load the value in als1
+         STWA    retAls,d    ;store result in retAls
+         RET                 
+
+         STOP                
 end:     .END               
          
