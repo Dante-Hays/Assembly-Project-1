@@ -51,20 +51,20 @@ opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
 
 start:   LDWA    0,i         ;clear the array if needed
          LDWX    inVecL,d    ;starting at the highest index, zero all values
-         STWA    inVec,x
-         SUBX    1,i
-         STWX    inVecL,d
-         CPWX    0,i
+         STWA    inVec,x     ;store 0 at current index
+         SUBX    1,i         ;decrement index register
+         STWX    inVecL,d    ;decrement length
+         CPWX    0,i         ;check if array cleared, if not, loop
          BRGT    start
 
-         LDWX    63,i 
+         LDWX    63,i        ;clear op and prc arrays
 opClr:   STWA    opArray,x
          STWA    prcArray,x
          SUBX    1,i
          CPWX    0,i
          BRGT    opClr
          
-         STWA    vecI,d 
+         STWA    vecI,d      ;clear other variables
          STWA    stopFlg,d
          STWA    value,d
          STWA    num1,d
@@ -82,6 +82,8 @@ opClr:   STWA    opArray,x
          LDBA    charIn,d    ;prep for first run by populating num3
          SUBA    0x30,i      ;convert to deci
          STWA    num3,d
+         STRO    post,d      ;output conversion label
+
 loop:    LDWA    num2,d      ;shift input chars num1 <- num2, num2 <- num3, num3 <- charIn
          STWA    num1,d
          LDWA    num3,d
@@ -541,7 +543,7 @@ endifi:  LDWA    stopati,d   ;end loop if i <= vecI (index of array)
          BRLT    output      ;I dont think we need this here, but i left for now ************************************
          BR      ifLoops     
 
-output:  LDWA    stackin,s   
+output:  LDWA    stackin,s 
          STRO    outputs,d   
          DECO    stackin,s   
          BR      askPr
@@ -919,23 +921,23 @@ alsLoop: LDWA    als1,d      ;load the value in als1
          STWA    retAls,d    ;store result in retAls
          RET   
 
-         BR      askPr  
-
 goodbye: STRO    byeMsg,d    ;say goodbye and end
          BR      end
 
 ;*****************************
 ;STRINGS
 ;*****************************
-menu:    .ASCII  "Welcome to the CDDM Calculator!\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
+menu:    .ASCII  "CDDM Postfix Calculator\n-------------------------------\nThis calculator is capable of processing:\n- multi-digit integers up to 32767\n- addition/subtraction\n- multiplication/division\n- AND, OR, XOR\n- and bit shifts\n-------------------------------\nTo exit the program, enter 'Q'\x00"
 
 prompt:  .ASCII  "\n-------------------------------\nPlease enter an expression:\n\x00"
 
 errMsg:  .ASCII  "\nSYNTAX ERROR: Unexpected Operator At: \x00"
-errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"              
+errMsg2: .ASCII  "\nSYNTAX ERROR: Expected Integer At: \x00"            
+
+post:    .ASCII  "\nPostfix Conversion:\n\x00"  
          
 outputs: .ASCII  "= \x00"    ;Still need to add the postfix expressiong back to char
 
-byeMsg:  .ASCII  "Goodbye! Shutting Down..."
+byeMsg:  .ASCII  "Goodbye! Shutting Down...\x00"
 
 end:     .END                 
