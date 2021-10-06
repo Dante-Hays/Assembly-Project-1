@@ -868,13 +868,11 @@ arsLoop: LDWA    ars1,d      ;load the value in ars1
 retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
 lrs1:    .WORD   0           ;formal parameter #2d
 lrs2:    .WORD   0           ;formal parameter #2d
-lrsTemp: .WORD   0           ;temp for logical right loop
+posChk:  .WORD   0           ;flag if the number was negative
 
 lrs:     LDWA    lrs1,d      ;load first param to A
          CPWA    0,i         ;see if it is negative
-         BRGT    isPos       ;if not branch to perform the shift normally
-         NEGA                ;else negate it to positive
-isPos:   STWA    lrs1,d      ;store to lrs1
+         BRGT    isPos       ;if not branch to store flag
 
 lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
          ASRA                ;aritmetic right shift
@@ -884,9 +882,23 @@ lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
          STWA    lrs2,d      
          CPWA    0,i         
          BRGT    lrsLoop     
-         LDWA    lrs1,d      ;load the value in the lrs1
+         LDWA    posChk,d    ;check sign to see if a bitflip needs to occur
+         CPWA    1,i         
+         BREQ    strLrs      ;postive = store normally
+         BRNE    strNeg      ;negative = negate
+
+strLrs:  LDWA    lrs1,d      ;load the value in the lrs1
          STWA    retLrs,d    ;store result in retLrs
          RET                 
+
+strNeg:  LDWA    lrs1,d      ;load the value in the lrs1
+         NEGA                ;nega to remove sign bit
+         STWA    retLrs,d    ;store result in retLrs
+         RET                 
+
+isPos:   LDWA    1,i         ;set the positive flag
+         STWA    posChk,d    
+         BR      lrsLoop               
 
 ;********* LEFT SHIFT ***********
 retAls:  .WORD   0           ;returned value from bitwise left shift #2d
