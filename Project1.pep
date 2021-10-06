@@ -46,8 +46,6 @@ num3:    .BLOCK  2           ;variable for multidigit intake, num3 is used to lo
 operand: .WORD   0           ;variable for storing operand #2c
 opTemp:  .WORD   0           ;temp var for storing operand while swapping #2c
 
-con63:   .EQUATE 63          ;constant for reseting array
-
 
 
 
@@ -59,13 +57,14 @@ start:   LDWA    0,i         ;clear the array if needed
          CPWX    0,i
          BRGT    start
 
-opClr:   STWX    con63,d ;ERROR: Illegal addressing mode for this instruction.
-         STWA    opArray,x
+         LDWX    63,i 
+opClr:   STWA    opArray,x
          STWA    prcArray,x
          SUBX    1,i
          CPWX    0,i
          BRGT    opClr
          
+         STWA    vecI,d 
          STWA    stopFlg,d
          STWA    value,d
          STWA    num1,d
@@ -880,11 +879,13 @@ arsLoop: LDWA    ars1,d      ;load the value in ars1
 retLrs:  .WORD   0           ;returned value from bitwise logical right shift #2d
 lrs1:    .WORD   0           ;formal parameter #2d
 lrs2:    .WORD   0           ;formal parameter #2d
-posChk:  .WORD   0           ;flag if the number was negative
+lrsTemp: .WORD   0           ;temp for logical right loop
 
 lrs:     LDWA    lrs1,d      ;load first param to A
          CPWA    0,i         ;see if it is negative
-         BRGT    isPos       ;if not branch to store flag
+         BRGT    isPos       ;if not branch to perform the shift normally
+         NEGA                ;else negate it to positive
+isPos:   STWA    lrs1,d      ;store to lrs1
 
 lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
          ASRA                ;aritmetic right shift
@@ -894,23 +895,9 @@ lrsLoop: LDWA    lrs1,d      ;load the value in lrs1
          STWA    lrs2,d      
          CPWA    0,i         
          BRGT    lrsLoop     
-         LDWA    posChk,d    ;check sign to see if a bitflip needs to occur
-         CPWA    1,i         
-         BREQ    strLrs      ;postive = store normally
-         BRNE    strNeg      ;negative = negate
-
-strLrs:  LDWA    lrs1,d      ;load the value in the lrs1
+         LDWA    lrs1,d      ;load the value in the lrs1
          STWA    retLrs,d    ;store result in retLrs
          RET                 
-
-strNeg:  LDWA    lrs1,d      ;load the value in the lrs1
-         NEGA                ;nega to remove sign bit
-         STWA    retLrs,d    ;store result in retLrs
-         RET                 
-
-isPos:   LDWA    1,i         ;set the positive flag
-         STWA    posChk,d    
-         BR      lrsLoop               
 
 ;********* LEFT SHIFT ***********
 retAls:  .WORD   0           ;returned value from bitwise left shift #2d
